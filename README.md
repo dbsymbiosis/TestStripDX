@@ -64,6 +64,7 @@ Edit example file using Text Editor and put group names in.<br />
 We recommend to use Gitbash shell to deliver command.<br />
 1. Set up Conda environment<br />
 We recommend to download Anaconda to set up tensorflow environment. Then deliver command in Gitbash shell to create and activate GPU or CPU.<br />
+
 Tensorflow CPU<br />
 conda env create -f conda-cpu.yml<br />
 conda activate yolov4-cpu<br />
