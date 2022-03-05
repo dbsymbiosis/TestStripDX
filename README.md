@@ -37,7 +37,7 @@ Download the zipped dataset includes all images and related .txt files like show
 ![9366cf94f1b88e48147cb28657518ca](https://user-images.githubusercontent.com/99760789/156488011-5de69ac2-70f8-4a4d-81ab-bbe8636a0b9e.png)
 6. Uploading Local or Google Drive Files to Use<br />
 We recommend to create a Google Drive Folder called yolov4 and put enerything into Google Drive for use<br />
-![6151825886ad39a3a628dc2449877fc](https://user-images.githubusercontent.com/99760789/156489104-b819ae2d-acbc-4e14-b72d-410f21aff1ea.png)
+![6151825886ad39a3a628dc2449877fc](https://user-images.githubusercontent.com/99760789/156489104-b819ae2d-acbc-4e14-b72d-410f21aff1ea.png)<br />
 The follwing list is the files need to upload into the Googlr Drive<br />
 ![df1eb079741e20d8bb341fbc6a7d2cf](https://user-images.githubusercontent.com/99760789/156489897-54d35a04-f711-444f-b662-4a42236a288a.png)<br />
 Copy of YOLOv4.ipynb: copy of this Colab tutorial file<br />
