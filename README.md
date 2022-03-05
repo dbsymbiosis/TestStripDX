@@ -61,7 +61,7 @@ Edit example file using Text Editor and put group names in.<br />
 ![image](https://user-images.githubusercontent.com/99760789/156896712-82ebdbd1-cbc9-4d06-ad85-4af8ee86c634.png)<br />
 
 ## Deploy .weights file into the Tensorflow
-We recommend to use Gitbash shell to deliver command.<br />
+Download Tensorflow folder to local drive. We recommend to use Gitbash shell to deliver command and visual studio code as editor.<br />
 1. Set up Conda environment<br />
 We recommend to download Anaconda to set up tensorflow environment. Then deliver command in Gitbash shell to create and activate GPU or CPU.<br />
 
@@ -73,7 +73,7 @@ Tensorflow GPU<br />
 conda env create -f conda-gpu.yml<br />
 conda activate yolov4-gpu<br />
 
-2. Download 'yolov4-obj_best.weights' file from backup folder<br />
+2. Download 'yolov4-obj_best.weights' file from backup folder.<br />
 
 3. Use custom trained detector<br />
 
@@ -85,7 +85,16 @@ The only change within the code you need to make in order for your custom model 
 4. Convert yolov4 detector to Tensorflow detector<br />
 python save_model.py --weights ./data/yolov4.weights --output ./checkpoints/yolov4-416 --input_size 416 --model yolov4 <br />
 Paste this command into Gitbash.<br />
-5. Test Tensorflow version detector<br />
+
+5. Crop and save target areas as new images<br />
+python detect.py --weights ./checkpoints/yolov4-416 --size 416 --model yolov4 --images ./data/images/'your image name'.jpg --crop<br />
+Imput this command into Gitbash, make sure replace'your image name' to your image name.<br />
+6. Measure RGB values in Matlab.<br />
+Use .m MATLAB file to measure cropped images, make sure to use correct directory.<br />
+7. Test TestStripDX.<br />
+Predict, predict and crop images.
+
+Measure RGB values.
 
 
 
