@@ -95,7 +95,7 @@ Use .m MATLAB file to measure cropped images, make sure to use correct directory
 7. Test TestStripDX.<br />
 Predict, predict and crop images.<br />
 ![3c7df9efa8480c71d55df8defe897db](https://user-images.githubusercontent.com/99760789/156899115-35268c08-938d-4c40-8d95-a781382dfe52.png)<br />
-Note: The showing labels are not related to the actual reagents, but the showing labels are exact same for each images. So, we correct this in .m file. We will retrain the model to try to correct this error.
+Note: The showing labels are not related to the actual reagents, but the showing labels are exact same for each images. So, we correct this in .m file. We will retrain the model to try to correct this error.<br />
 Measure RGB values.<br />
 ![4eb2e7d3cee213a42dfdbd4567ca0c9](https://user-images.githubusercontent.com/99760789/156899174-25a657f6-9c7c-4c9b-b394-28e9b76d6a49.png)
 
