@@ -75,11 +75,16 @@ conda activate yolov4-gpu<br />
 
 2. Download 'yolov4-obj_best.weights' file from backup folder<br />
 
-3. Use custom trained detector
+3. Use custom trained detector<br />
+Copy and paste your custom .weights file into the 'data' folder and copy and paste your custom .names into the 'data/classes/' folder.<br />
 
-4. Convert yolov4 detector to Tensorflow detector
+The only change within the code you need to make in order for your custom model to work is on line 14 of 'core/config.py' file. Update the code to point at your custom .names file as seen below. (my custom .names file is called custom.names but yours might be named differently)<br />
 
-5. Test Tensorflow version detector
+
+4. Convert yolov4 detector to Tensorflow detector<br />
+python save_model.py --weights ./data/yolov4.weights --output ./checkpoints/yolov4-416 --input_size 416 --model yolov4 <br />
+Paste this command into Gitbash.<br />
+5. Test Tensorflow version detector<br />
 
 
 
