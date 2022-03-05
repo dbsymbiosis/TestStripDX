@@ -20,7 +20,7 @@ Assign images into train and valid datasets which are for training and validing 
 To generate dataset, in preprocessing section. We resized images in 416* 416 which can accelerate the training before downing annotated dataset: <br />
 ![32fff1758cb5304017ab60be2cb7dec](https://user-images.githubusercontent.com/99760789/156482596-06d385ad-003d-489d-b997-52949351b6c9.png)  <br /> 
 6. Download <br />
-Download the zipped dataset includes all images and related .txt files like shown in images folder: ![9d7e3ded18702bbafbc578ca574cb30](https://user-images.githubusercontent.com/99760789/156482401-83e1e3f8-ffbe-4194-bb4d-89a36f65fbbb.png)<br />
+Download the zipped dataset includes all images and related .txt files like shown in images folder: ![55d4eac6799dd871bf918c90a54ce5f](https://user-images.githubusercontent.com/99760789/156896599-e20acd80-42f4-4b90-bafa-37c4f9504d11.png)<br />
 
 
 ## Train custom detector in Google Colab
