@@ -11,7 +11,7 @@ The dataset need to be as versatile as you can. For CoralDX, we utilized 40 pict
 1. Get started<br />
 2. Create new project (name it)<br />
 3. Annotate (group and name)<br />
-Annotation sample:![ed8f7710c01f4b22005a57eb09dc4ef](https://user-images.githubusercontent.com/99760789/156478377-41172c87-93b7-42b7-a5ca-9a9d479a781e.png)<br />
+![eed6415d98702e9ff0b3778f4e7b269](https://user-images.githubusercontent.com/99760789/156896425-41ef0501-870f-4ddc-8442-670ae619b308.png)<br />
 To annotate, use the second square tool in right white bar to square the target area, then group and name every target areas. <br />
 4. Assign<br />
 Assign images into train and valid datasets which are for training and validing the custom detector in 80%:20% ratio.<br />
