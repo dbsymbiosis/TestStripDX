@@ -57,6 +57,7 @@ generate_test.py: configuration files to train our custom detector are the test.
 ![b58c4c568501705e3c31a3fa9d3d08d](https://user-images.githubusercontent.com/99760789/156495019-189c595f-f90f-41cc-80f0-4813498eb7fb.png)
 classes.txt: group names<br />
 Edit example file using Text Editor and put group names in.<br />
-
+7. Start training<br />
+![image](https://user-images.githubusercontent.com/99760789/156896712-82ebdbd1-cbc9-4d06-ad85-4af8ee86c634.png)<br />
 
 ## Deploy .weights file into the Tensorflow
