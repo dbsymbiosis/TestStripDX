@@ -79,7 +79,7 @@ conda activate yolov4-gpu<br />
 Copy and paste your custom .weights file into the 'data' folder and copy and paste your custom .names into the 'data/classes/' folder.<br />
 
 The only change within the code you need to make in order for your custom model to work is on line 14 of 'core/config.py' file. Update the code to point at your custom .names file as seen below. (my custom .names file is called custom.names but yours might be named differently)<br />
-
+![image](https://user-images.githubusercontent.com/99760789/156898001-df800ec3-0478-44ad-8ffc-82f9b6f14920.png)<br />
 
 4. Convert yolov4 detector to Tensorflow detector<br />
 python save_model.py --weights ./data/yolov4.weights --output ./checkpoints/yolov4-416 --input_size 416 --model yolov4 <br />
