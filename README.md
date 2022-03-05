@@ -62,15 +62,15 @@ Edit example file using Text Editor and put group names in.<br />
 
 ## Deploy .weights file into the Tensorflow
 We recommend to use Gitbash shell to deliver command.<br />
-1. Set up Conda environment
+1. Set up Conda environment<br />
 We recommend to download Anaconda to set up tensorflow environment. Then deliver command in Gitbash shell to create and activate GPU or CPU.<br />
-# Tensorflow CPU
-conda env create -f conda-cpu.yml
-conda activate yolov4-cpu
+Tensorflow CPU<br />
+conda env create -f conda-cpu.yml<br />
+conda activate yolov4-cpu<br />
 
-# Tensorflow GPU
-conda env create -f conda-gpu.yml
-conda activate yolov4-gpu
+Tensorflow GPU<br />
+conda env create -f conda-gpu.yml<br />
+conda activate yolov4-gpu<br />
 
 2. Download 'yolov4-obj_best.weights' file from backup folder<br />
 
