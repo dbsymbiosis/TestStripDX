@@ -1,0 +1,4 @@
+Note: 1. Put jupyter file into the target mainfolder.
+      2. Before yolov4 prediction, Add suffix * TRIS * into your pictures' name.
+      3. Check the commands if any needs to change the * names * specifically.
+      4. Final result file will be in the same local folder as your pictures.
