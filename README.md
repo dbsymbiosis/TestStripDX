@@ -97,7 +97,7 @@ Predict, predict and crop images.<br />
 ![3c7df9efa8480c71d55df8defe897db](https://user-images.githubusercontent.com/99760789/156899115-35268c08-938d-4c40-8d95-a781382dfe52.png)<br />
 Note: The showing labels are not related to the actual reagents, but the showing labels are exact same for each images. So, we correct this in jupyter file. We will retrain the model to try to correct this error.<br />
 Measure RGB values.<br />
-The last step is to run the TeststripsDX file in Jupyter Note. Then, it will create an excel file. Please check the TeststripsDX folder for details including the code, result file, and testing dataset.
+The last step is to run the TeststripsDX file in Jupyter Note. Then, it will create an excel file. Please check the TeststripsDX folder for details including the code, result file, and testing dataset.<br />
 ![8858ed4a3c1c72014144248a3c119ac](https://user-images.githubusercontent.com/99760789/182762850-bf7a90cf-8ff4-4efd-972c-f9bd35d28a17.jpg)
 
 
