@@ -62,13 +62,14 @@ def capture_frame(video_filename, out_prefix, seconds):
 	vid = video_rotation(vid)
 	for i, (tstamp, frame) in enumerate(vid.iter_frames(with_times=True)):
 		if tstamp > seconds[0]:
-			logging.debug('Found frame for %s seconds: frame_count:%s; timestamp:%s', seconds[0], i, tstamp) ## DEBUG
+			logging.info('Found frame for %s seconds: frame_count:%s; timestamp:%s', seconds[0], i, tstamp) ## DEBUG
 			img = Image.fromarray(frame, 'RGB')
 			frame_filename = out_prefix + '.' + str(seconds[0]) + 'sec.png'
 			img.save(frame_filename)
 			seconds = seconds[1:] # Remove first element from list as we just found a frame for this timepoint
 		# Break loop if we have run out of timepoints that we want.
 		if len(seconds) == 0:
+			logging.info("Done extracting frames from video")
 			break
 
 

@@ -77,7 +77,10 @@ def load_and_process_test_results(results_file, blank):
 	results = load_results(results_file)
 	REA = {}
 	for name in NAMES:
-		REA[name] = blank[name] - results[name]
+		try:
+			REA[name] = blank[name] - results[name]
+		except TypeError:
+			REA[name] = results[name]
 	return results, REA
 
 
@@ -89,7 +92,10 @@ def load_results(results_file):
 			for line in r:
 				line = line.strip().split('\t')
 				if line[0] in NAMES:
-					results[line[0]] = float(line[1])
+					try:
+						results[line[0]] = float(line[1])
+					except ValueError:
+						results[line[0]] = line[1]
 		
 		# Assume if results equals 255 assume that this name was missing from the results file.
 		for name in NAMES:
