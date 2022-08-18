@@ -2,7 +2,7 @@
 # coding=utf-8
 
 import tensorflow as tf
-import core.common as common
+import src.common as common
 
 def darknet53(input_data):
 

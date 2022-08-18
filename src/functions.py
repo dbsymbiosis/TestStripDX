@@ -4,8 +4,8 @@ import random
 import numpy as np
 import tensorflow as tf
 import pytesseract
-from core.utils import read_class_names
-from core.config import cfg
+from src.utils import read_class_names
+from src.config import cfg
 
 # function to count objects, can return total classes or count per class
 def count_objects(data, by_class = False, allowed_classes = list(read_class_names(cfg.YOLO.CLASSES).values())):

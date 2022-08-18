@@ -4,7 +4,7 @@ import colorsys
 import numpy as np
 import tensorflow as tf
 import pytesseract
-from core.config import cfg
+from src.config import cfg
 import re
 
 # If you don't have tesseract executable in your PATH, include the following:
