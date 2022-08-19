@@ -37,27 +37,41 @@ wget
 wget 
 ```
 
-Copy and paste your custom .weights file into the 'data' folder and copy and paste your custom .names into the 'data/classes/' folder.<br />
+Copy and paste your custom .weights file into the 'data' folder and copy and paste your custom .names into the 'models/' folder.
 
 
 
-4. Convert yolov4 detector to Tensorflow detector<br />
+Convert yolov4 detector to Tensorflow detector
 
   ```bash
-  python save_model.py --weights ./data/yolov4.weights --output ./checkpoints/yolov4-416 --input_size 416 --model yolov4
+  python save_model.py
   ```
 
-  
+  Crop and save target areas as new images
 
-5. Crop and save target areas as new images<br />
-  python detect.py --weights ./checkpoints/yolov4-416 --size 416 --model yolov4 --images ./data/images/'your image name'.jpg --crop<br />
-  Imput this command into Gitbash, make sure replace'your image name' to your image name.<br />
+```bash
+# Open an Image
+img = Image.open('test/VID_20220817_152249.mp4.TestStripDX/frame.30sec.detect.detection1.png')
+ 
+# Call draw Method to add 2D graphics in an image
+I1 = ImageDraw.Draw(img)
+ 
+# Add Text to an image
+I1.text((28, 36), "nice Car", fill=(255, 0, 0))
+ 
+# Display edited image
+img.show()
+ 
+# Save the edited image
+img.save("t.png")
+```
 
-6. Test TestStripDX.<br />
-  Predict, predict and crop images.<br />
-  ![3c7df9efa8480c71d55df8defe897db](https://user-images.githubusercontent.com/99760789/156899115-35268c08-938d-4c40-8d95-a781382dfe52.png)<br />
-  Note: The showing labels are not related to the actual reagents, but the showing labels are exact same for each images. So, we correct this in .m file. We will retrain the model to try to correct this error.<br />
-  Measure RGB values.<br />
+Test TestStripDX.
+Predict, predict and crop images.![3c7df9efa8480c71d55df8defe897db](https://user-images.githubusercontent.com/99760789/156899115-35268c08-938d-4c40-8d95-a781382dfe52.png)
+
+Note: The showing labels are not related to the actual reagents, but the showing labels are exact same for each images. So, we correct this in .m file. We will retrain the model to try to correct this error.
+
+Measure RGB values.
   ![4eb2e7d3cee213a42dfdbd4567ca0c9](https://user-images.githubusercontent.com/99760789/156899174-25a657f6-9c7c-4c9b-b394-28e9b76d6a49.png)
 
 

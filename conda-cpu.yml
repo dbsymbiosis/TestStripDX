@@ -5,6 +5,7 @@ dependencies:
   - pip
   - matplotlib
   - opencv
+  - moviepy
   - pip:
     - opencv-python==4.1.1.26
     - lxml
