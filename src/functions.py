@@ -4,11 +4,10 @@ import random
 import numpy as np
 import tensorflow as tf
 import pytesseract
-from src.utils import read_class_names
 from src.config import cfg
 
 # function to count objects, can return total classes or count per class
-def count_objects(data, by_class = False, allowed_classes = list(read_class_names(cfg.YOLO.CLASSES).values())):
+def count_objects(data, allowed_classes, class_names, by_class = False):
     boxes, scores, classes, num_objects = data
 
     #create dictionary to hold count of objects
@@ -16,8 +15,6 @@ def count_objects(data, by_class = False, allowed_classes = list(read_class_name
 
     # if by_class = True then count objects per class
     if by_class:
-        class_names = read_class_names(cfg.YOLO.CLASSES)
-
         # loop through total number of objects found
         for i in range(num_objects):
             # grab class index and convert into corresponding class name
@@ -35,9 +32,8 @@ def count_objects(data, by_class = False, allowed_classes = list(read_class_name
     return counts
 
 # function for cropping each detection and saving as new image
-def crop_objects(img, data, path, allowed_classes):
+def crop_objects(img, data, path, allowed_classes, class_names):
     boxes, scores, classes, num_objects = data
-    class_names = read_class_names(cfg.YOLO.CLASSES)
     #create dictionary to hold count of objects for image name
     counts = dict()
     for i in range(num_objects):
@@ -59,9 +55,8 @@ def crop_objects(img, data, path, allowed_classes):
             continue
         
 # function to run general Tesseract OCR on any detections 
-def ocr(img, data):
+def ocr(img, data, class_names):
     boxes, scores, classes, num_objects = data
-    class_names = read_class_names(cfg.YOLO.CLASSES)
     for i in range(num_objects):
         # get class name for detection
         class_index = int(classes[i])

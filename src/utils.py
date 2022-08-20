@@ -151,6 +151,21 @@ def load_weights(model, weights_file, model_name='yolov4', is_tiny=False):
     # assert len(wf.read()) == 0, 'failed to read all data'
     wf.close()
 
+def load_config(tiny, model, class_file_name):
+    if tiny:
+        STRIDES = np.array(cfg.YOLO.STRIDES_TINY)
+        ANCHORS = get_anchors(cfg.YOLO.ANCHORS_TINY, tiny)
+        XYSCALE = cfg.YOLO.XYSCALE_TINY if model == 'yolov4' else [1, 1]
+    else:
+        STRIDES = np.array(cfg.YOLO.STRIDES)
+        if model == 'yolov4':
+            ANCHORS = get_anchors(cfg.YOLO.ANCHORS, tiny)
+        elif model == 'yolov3':
+            ANCHORS = get_anchors(cfg.YOLO.ANCHORS_V3, tiny)
+        XYSCALE = cfg.YOLO.XYSCALE if model == 'yolov4' else [1, 1, 1]
+    NUM_CLASS = len(read_class_names(class_file_name))
+    
+    return STRIDES, ANCHORS, NUM_CLASS, XYSCALE
 
 def read_class_names(class_file_name):
     names = {}
@@ -158,22 +173,6 @@ def read_class_names(class_file_name):
         for ID, name in enumerate(data):
             names[ID] = name.strip('\n')
     return names
-
-def load_config(FLAGS):
-    if FLAGS.tiny:
-        STRIDES = np.array(cfg.YOLO.STRIDES_TINY)
-        ANCHORS = get_anchors(cfg.YOLO.ANCHORS_TINY, FLAGS.tiny)
-        XYSCALE = cfg.YOLO.XYSCALE_TINY if FLAGS.model == 'yolov4' else [1, 1]
-    else:
-        STRIDES = np.array(cfg.YOLO.STRIDES)
-        if FLAGS.model == 'yolov4':
-            ANCHORS = get_anchors(cfg.YOLO.ANCHORS, FLAGS.tiny)
-        elif FLAGS.model == 'yolov3':
-            ANCHORS = get_anchors(cfg.YOLO.ANCHORS_V3, FLAGS.tiny)
-        XYSCALE = cfg.YOLO.XYSCALE if FLAGS.model == 'yolov4' else [1, 1, 1]
-    NUM_CLASS = len(read_class_names(cfg.YOLO.CLASSES))
-
-    return STRIDES, ANCHORS, NUM_CLASS, XYSCALE
 
 def get_anchors(anchors_path, tiny=False):
     anchors = np.array(anchors_path)
@@ -213,8 +212,7 @@ def format_boxes(bboxes, image_height, image_width):
         box[0], box[1], box[2], box[3] = xmin, ymin, xmax, ymax
     return bboxes
 
-def draw_bbox(image, bboxes, info = False, counted_classes = None, show_label=True, allowed_classes=list(read_class_names(cfg.YOLO.CLASSES).values()), read_plate = False):
-    classes = read_class_names(cfg.YOLO.CLASSES)
+def draw_bbox(image, bboxes, allowed_classes, classes, info = False, counted_classes = None, show_label=True, read_plate = False):
     num_classes = len(classes)
     image_h, image_w, _ = image.shape
     hsv_tuples = [(1.0 * x / num_classes, 1., 1.) for x in range(num_classes)]
