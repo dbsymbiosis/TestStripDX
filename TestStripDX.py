@@ -8,9 +8,11 @@ An image processing framework for processing and extracting test strip results f
 import sys
 import os
 import argparse
+from argparse import RawTextHelpFormatter
 import logging
 import shutil
 from PIL import ImageDraw
+from PyPDF2 import PdfFileMerger
 from src.video import *
 from src.detector import *
 
@@ -86,6 +88,25 @@ def main():
 		help='Print DEBUG info (default: %(default)s)'
 	)
 	
+	## Parser for command to join PDFs
+	parser_joinPDFs = subparsers.add_parser('joinPDFs',
+		help='Join PDF files together',
+		description=JOINPDFS_DESCRIPTION,
+		formatter_class=RawTextHelpFormatter
+	)
+	parser_joinPDFs.add_argument('-i', '--infiles', nargs='+', metavar="file.pdf",
+		required=False, default=sys.stdin, type=str,
+		help='Input pdf files (default: stdin)'
+	)
+	parser_joinPDFs.add_argument('-o', '--out', metavar='merged.pdf',
+		required=True, type=str,
+		help='Output merged pdf file.'
+	)
+	parser_joinPDFs.add_argument('--debug',
+		required=False, action='store_true',
+		help='Print DEBUG info (default: %(default)s)'
+	)
+	
 	## Parse all arguments.
 	args = parser.parse_args()
 	
@@ -98,11 +119,12 @@ def main():
 	logging.debug('%s', args) ## DEBUG
 	
 	## Model variables
+	script_dir = os.path.abspath(os.path.dirname(__file__))
 	models_dir       = 'models'
-	model_weights    = os.path.join(models_dir, args.model+'.weights')
-	model_names      = os.path.join(models_dir, args.model+'.names')
-	model_detector   = os.path.join(models_dir, args.model+'.detector')
-	model_targets_f  = os.path.join(models_dir, args.model+'.targets')
+	model_weights    = os.path.join(script_dir, models_dir, args.model+'.weights')
+	model_names      = os.path.join(script_dir, models_dir, args.model+'.names')
+	model_detector   = os.path.join(script_dir, models_dir, args.model+'.detector')
+	model_targets_f  = os.path.join(script_dir, models_dir, args.model+'.targets')
 	
 	## Load targets info
 	logging.info('Opening file %s with list of target tests', model_targets_f) ## INFO
@@ -130,6 +152,8 @@ def main():
 		process_videos(args.videos, model_detector, model_names, model_targets, args.cleanup, args.suffix)
 	elif args.command == 'combine':
 		combine_results(args.test_results, args.blank_results, args.out, model_targets)
+	elif args.command == 'joinPDFs':
+		joinPDFs(args.infiles, args.out)
 
 
 
@@ -371,6 +395,30 @@ def load_results(results_file, names, delimiter='\t'):
 				logging.warning('A value for %s was not found in %s results file. Setting to 255 as default.', name, results_file.name)
 	logging.debug('%s', results) ## DEBUG
 	return results
+
+
+
+JOINPDFS_DESCRIPTION = '''
+
+Takes a list of PDF files (either from command line or from stdin) and merges them into a single multipage document
+
+NOTE:
+        - Depending on the PDFs being merged this script might produce a few warnings:
+                PdfReadWarning: Multiple definitions in dictionary at byte 0x1f0e for key /F3 [generic.py:588]
+                PdfReadWarning: Multiple definitions in dictionary at byte 0x1f0e for key /F3 [generic.py:588]
+                ...
+          Nothing we can do to fix these problems (it has to do with how the PDFs are formed) so just ignore them. 
+
+'''
+def joinPDFs(input_PDFs, output_file):
+	## See https://stackoverflow.com/questions/3444645/merge-pdf-files
+	merger = PdfFileMerger(strict=False)
+	
+	for pdf in input_PDFs:
+		merger.append(pdf)	
+	
+	merger.write(output_file)
+	merger.close()
 
 
 

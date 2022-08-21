@@ -47,14 +47,18 @@ def capture_frame(video_filename, out_prefix, seconds):
 #	video	video file to process
 def video_rotation(video):
 	rotation = video.rotation
-	if rotation == 90:
+	if rotation == 0:
+		video = video.rotate(-90)
+	elif rotation == 90:
 		video = video.resize(video.size[::-1])
 		video.rotation = 0
 	elif rotation == 180:
 		video = video.rotate(90)
-	elif rotation == 270:  # Moviepy can only cope with 90, -90, and 180 degree turns
+	elif rotation == 270:
 		video = video.resize(video.size[::-1])
 		video = video.rotate(180)  # Moviepy can only cope with 90, -90, and 180 degree turns
+	else:
+		logging.warning('Video has a weird rotation (i.e., not 0, 90, 180, or 270) of %s!', rotation)
 	return video
 
 
