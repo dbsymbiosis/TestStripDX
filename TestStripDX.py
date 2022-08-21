@@ -132,8 +132,8 @@ def main():
 		logging.error('Targets file (%s) does not exist!', model_targets_f) ## ERROR
 		sys.exit(1)
 	
-	# Open targets file and convert to set(set(str, int), set(str, int), ...)
-	model_targets = set()
+	# Open targets file and convert to [[str, int], [str, int], ...]
+	model_targets = list()
 	with open(model_targets_f, 'r') as fh:
 		for line in fh:
 			line = line.strip()
@@ -142,7 +142,7 @@ def main():
 				continue
 			
 			x, y = line.split('\t')
-			model_targets.add((x, int(y)))
+			model_targets.append([x, int(y)])
 	logging.debug('model_targets: %s', model_targets) ## DEBUG
 	
 	## Run subcommand
