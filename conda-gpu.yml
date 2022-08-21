@@ -1,5 +1,8 @@
 name: yolov4-gpu
 
+channels:
+- anaconda
+- conda-forge
 dependencies:
   - python==3.7
   - pip
@@ -7,6 +10,8 @@ dependencies:
   - opencv
   - cudnn
   - cudatoolkit==10.1.243
+  - moviepy
+  - pypdf2
   - pip:
     - tensorflow-gpu
     - opencv-python==4.1.1.26

@@ -43,27 +43,22 @@ Copy and paste your custom .weights file into the 'data' folder and copy and pas
 
 Convert yolov4 detector to Tensorflow detector
 
-  ```bash
-  python save_model.py
-  ```
+```bash
+./TestStripDX.py convert -m URS10
+```
 
-  Crop and save target areas as new images
+Crop and save target areas as new images
 
 ```bash
-# Open an Image
-img = Image.open('test/VID_20220817_152249.mp4.TestStripDX/frame.30sec.detect.detection1.png')
- 
-# Call draw Method to add 2D graphics in an image
-I1 = ImageDraw.Draw(img)
- 
-# Add Text to an image
-I1.text((28, 36), "nice Car", fill=(255, 0, 0))
- 
-# Display edited image
-img.show()
- 
-# Save the edited image
-img.save("t.png")
+./TestStripDX.py process -m URS10 -v video1.mp4 video2.mp4 video3.mp4 .. ..
+```
+
+A number of output files (and a directory with temp files) for each input video file will be created by this command and will have the suffix `*.TestStripDX`
+
+Combine the `*.results.txt` files produced by the previous command together into a single file.
+Will also produce REA values. If a blank sample is prodided this will be used for REA calcualtion, otherwise a value of 255 will be used.
+```bash
+./TestStripDX.py combine -m URS10 -b video1.mp4.TestStripDX.results.txt -t video2.mp4.TestStripDX.results.txt video3.mp4.TestStripDX.results.txt -o combined_results.txt
 ```
 
 Test TestStripDX.

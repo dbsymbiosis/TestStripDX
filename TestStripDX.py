@@ -10,6 +10,7 @@ import os
 import argparse
 import logging
 import shutil
+from PIL import ImageDraw
 from src.video import *
 from src.detector import *
 
@@ -20,7 +21,7 @@ def main():
 	parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=DESCRIPTION)
 	subparsers = parser.add_subparsers(dest='command', required=True)
 	
-	# Parser for the conversion of the yolov4 to Tensorflow detector
+	## Parser for the conversion of the yolov4 to Tensorflow detector
 	parser_convert_detector = subparsers.add_parser('convert', 
 		help='Convert yolov4 detector to Tensorflow detector',
 		description=CONVERT_RESULTS_DESCRIPTION
@@ -34,7 +35,7 @@ def main():
 		help='Print DEBUG info (default: %(default)s)'
 	)
 	
-	# Parser for the processing of the test strip video files
+	## Parser for the processing of the test strip video files
 	parser_process_video = subparsers.add_parser('process', 
 		help='Process test strip video files',
 		description=PROCESS_VIDEOS_DESCRIPTION)
@@ -59,7 +60,7 @@ def main():
 		help='Print DEBUG info (default: %(default)s)'
 	)
 	
-	# Parser for the combining of the results files into a single output
+	## Parser for the combining of the results files into a single output
 	parser_combine_results = subparsers.add_parser('combine', 
 		help='Combine results from processed video files', 
 		description=COMBINE_RESULTS_DESCRIPTION
@@ -85,7 +86,7 @@ def main():
 		help='Print DEBUG info (default: %(default)s)'
 	)
 	
-	# Parse all arguments.
+	## Parse all arguments.
 	args = parser.parse_args()
 	
 	## Set up basic debugger
@@ -251,7 +252,7 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 			
 			## Check to see if our target frame has been extracted
 			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", name+"_1.png")
-			logging.debug('Searching for 1st frame: %s', target_frame) ## DEBUG
+			logging.debug('Searching for cropped test: %s', target_frame) ## DEBUG
 			if os.path.exists(target_frame):
 				score = extract_colors(target_frame)
 			else:
@@ -259,28 +260,20 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 				score = 'NA'
 			results.write(name+'\t'+str(score)+'\n')
 			logging.debug('Score: %s', score) ## DEBUG
-			
-			## Check to see if multiple frames have been detected - give warning if found
-			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect", name+"_2.png")
-			logging.debug('Searching for erroneous 2nd frame: %s', target_frame) ## DEBUG
-			if os.path.exists(target_frame):
-				logging.warning('Multiple test regions identified for %s frame at time %s seconds', name, time) ## WARNING
 		
 		## Close results file
 		results.close()
 		
 		## Create combined detection image pdf
 		logging.debug('detection_images: %s', detection_images) ## DEBUG
-		from PIL import ImageDraw
-		from PIL import ImageFont
 		detection_images_named = []
 		for detection_image in detection_images:
 			img = Image.open(detection_image)
 			I1 = ImageDraw.Draw(img)
-			I1.text((10, 10), detection_image, font=myFont, fill =(255, 0, 0))
+			I1.text((10, 30), detection_image, fill =(255, 0, 0))
 			detection_images_named.append(img)
 		detection_images_named[0].save(detection_pdf_path, 
-			"PDF", resolution=100.0, save_all=True, 
+			"PDF", resolution=1000.0, save_all=True, 
 			append_images=detection_images_named[1:]
 		)
 		
@@ -356,17 +349,17 @@ def load_results(results_file, names, delimiter='\t'):
 			logging.error('Results file (%s) does not exist!', results_file.name) ## ERROR
 			sys.exit(1)
 		
-		# For each line
+		## For each line
 		with results_file as r:
 			for line in r:
 				line = line.strip()
-				# Skip comment or blank lines
+				## Skip comment or blank lines
 				if line.startswith('#') or not line:
 					continue
 				
 				line_split = line.split(delimiter)
 				if line_split[0] in names:
-					# Will get a ValueError if we have a 'NA' missing value
+					## Will get a ValueError if we have a 'NA' missing value
 					try:
 						results[line_split[0]] = float(line_split[1])
 					except ValueError:
