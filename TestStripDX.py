@@ -337,9 +337,14 @@ def combine_results(test_files, blank_file, outfile, intervals):
 	outfile.write(t + '\n')
 
 	## Blank strips
-	logging.debug('Loading blank results file: %s', blank_file.name) ## DEBUG
+	if blank_file is not None:
+		blank_name = blank_file.name
+		logging.debug('Loading blank results file: %s', blank_name) ## DEBUG
+	else:
+		blank_name = 'NA'
+		logging.debug('No blank file given. Using default blank values of 255 for REA calcualtion') ## DEBUG
 	blank = load_results(blank_file, names)
-	t = blank_file.name + '\tblank'
+	t = blank_name + '\tblank'
 	for name in names:
 		t = t + '\t' + str(blank[name]) + '\tNA'
 	outfile.write(t + '\n')
@@ -365,7 +370,7 @@ def combine_results(test_files, blank_file, outfile, intervals):
 
 
 def load_results(results_file, names, delimiter='\t'):
-	results = {x:255.0 for x in names}
+	results = {x:'NA' for x in names}
 	## results_file will be None if no blank file name is given. In these cases just use 255 as default "blank" values
 	if results_file is not None:
 		## Check that results file exists
@@ -391,8 +396,8 @@ def load_results(results_file, names, delimiter='\t'):
 		
 		# Assume if results equals 255 assume that this name was missing from the results file.
 		for name in names:
-			if results[name] == 255.0:
-				logging.warning('A value for %s was not found in %s results file. Setting to 255 as default.', name, results_file.name)
+			if results[name] == 'NA':
+				logging.warning('A value for %s was not found in %s results file.', name, results_file.name)
 	logging.debug('%s', results) ## DEBUG
 	return results
 
