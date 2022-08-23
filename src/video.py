@@ -1,9 +1,129 @@
+import sys
+import os
 import logging
 import numpy as np
 from moviepy import *
 import moviepy.editor as mpy
 from PIL import Image
+from PIL import ImageDraw
 import imageio.v2 as imageio
+from src.detector import *
+
+
+
+# Process test strip video files
+#
+# Parameters:
+#	videos			input video files
+#	model_detector		path to Tensorflow detector file (e.g., 'models/teststrips.detector')
+#	model_names		path to names file (e.g., 'models/teststrips.names')
+#	intervals		time intervals to collect frames from videos
+#	cleanup			cleanup temp files once finished processing video
+#	outdir_suffix		suffix to add to output results files
+#	outdir_overwrite	overwrite output director directory (default: True)
+def process_videos(videos, model_detector, model_names, intervals, cleanup, outdir_suffix, outdir_overwrite=True):
+	logging.info('Processing video files') ## INFO
+	
+	## Check if detector directory exist
+	EXIT = False
+	if not os.path.exists(model_detector):
+		EXIT = True
+		logging.error('Detector (%s) does not exist! Try running the "convert" command first.', model_detector) ## ERROR
+	if not os.path.exists(model_names):
+		EXIT = True
+		logging.error('Names file (%s) does not exist!', model_names) ## ERROR
+	if EXIT:
+		sys.exit(1)
+	
+	## Extract names and times to extract from video.
+	names = [x[0] for x in intervals]
+	times = [x[1] for x in intervals]
+	
+	for video in videos:
+		outdir = video+outdir_suffix
+		results_file = outdir+'.results.txt'
+		frame_prefix = os.path.join(outdir, "frame")
+		detection_images = []
+		detection_pdf_path = outdir+'.detection.pdf'
+		
+		logging.info('########################################################') ## INFO
+		logging.info('## Extracting frames from %s', video) ## INFO
+		logging.info('########################################################') ## INFO
+		
+		## Create output directory
+		logging.debug('out_dir=%s', outdir) ## DEBUG
+		
+		## Check if video file exists.
+		if not os.path.exists(video):
+			logging.error('Video file %s does not exists!', video) ## ERROR
+			sys.exit(1)
+		
+		## Remove exisiting model directory if it exists
+		if os.path.exists(outdir):
+			if outdir_overwrite:
+				logging.info('Output directory %s already exists (from a previous run?), removing it so we can recreate it', outdir) ## INFO
+				shutil.rmtree(outdir)
+			else:
+				logging.error('Output directory %s already exists (from a previous run?), will not overwrite!', outdir) ## ERROR
+				sys.exit(1)
+		
+		## Create output directory
+		os.mkdir(outdir)
+		
+		## Open results file
+		results = open(results_file, 'w')
+		
+		## Extract frame from a specific timestamp in a video.
+		capture_frame(video, frame_prefix, times)
+		
+		## Extract tests from frames
+		for name, time in intervals:
+			frame_in = frame_prefix+"."+str(time)+"sec.png"
+			frame_out = frame_prefix+"."+str(time)+"sec.detect"
+			detection_images.append(frame_prefix+"."+str(time)+"sec.detect.detection1.png")
+			
+			logging.info('Searching %s frame at time %s seconds', name, time) ## INFO
+			logging.debug('In frame: %s', frame_in) ## DEBUG
+			logging.debug('Out prefix: %s', frame_out) ## DEBUG
+			detect_test_strip(model_detector, model_names, [frame_in], frame_out, count=True, info=True)
+			
+			## Check to see if our target frame has been extracted
+			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", name+"_1.png")
+			logging.debug('Searching for cropped test: %s', target_frame) ## DEBUG
+			if os.path.exists(target_frame):
+				score = extract_colors(target_frame)
+			else:
+				logging.warning('No frame detected for %s frame at time %s seconds', name, time) ## WARNING
+				score = 'NA'
+			results.write(name+'\t'+str(score)+'\n')
+			logging.debug('Score: %s', score) ## DEBUG
+		
+		## Close results file
+		results.close()
+		
+		## Create combined detection image pdf
+		logging.debug('detection_images: %s', detection_images) ## DEBUG
+		detection_images_named = []
+		for detection_image in detection_images:
+			img = Image.open(detection_image)
+			I1 = ImageDraw.Draw(img)
+			I1.text((10, 30), detection_image, fill =(255, 0, 0))
+			detection_images_named.append(img)
+		detection_images_named[0].save(detection_pdf_path, 
+			"PDF", resolution=1000.0, save_all=True, 
+			append_images=detection_images_named[1:]
+		)
+		
+		## Cleanup if required
+		if cleanup:
+			logging.info('Cleaning up - removing %s', outdir) ## INFO
+			shutil.rmtree(outdir)
+		
+		logging.info('########################################################') ## INFO
+		logging.info('## Finished. Results in %s', results_file) ## INFO
+		logging.info('########################################################') ## INFO
+	
+	logging.info('Finished processing video files') ## INFO
 
 
 

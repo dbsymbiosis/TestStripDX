@@ -1,3 +1,5 @@
+import logging
+import shutil
 import cv2
 from PIL import Image
 from src.yolov4 import YOLO, decode, filter_boxes
@@ -16,19 +18,46 @@ from tensorflow.compat.v1 import InteractiveSession
 
 
 
+
+
+
 # Convert YOLO detector to Tensorflow detector
 #
 # Paramaters:
-#	model_weights	path to weights file (e.g., 'models/teststrips.weights')
-#	model_names	path to names file (e.g., 'models/teststrips.names')
-#	output		path to output (e.g., 'models/teststrips.yolov4-416')
-#	tiny		is yolo-tiny or not (default: False)
-#	input_size	define input size of export model (default: 416)
-#	score_thres	define score threshold (default: 0.2)
-#	framework	define what framework do you want to convert (tf, trt, tflite) (default: 'tf')
-#	model		yolov3 or yolov4 (default: 'yolov4')
-def convert_to_Tensorflow_detector(model_weights, model_names, output, 
+#	model_weights		path to weights file (e.g., 'models/teststrips.weights')
+#	model_names		path to names file (e.g., 'models/teststrips.names')
+#	output			path to output (e.g., 'models/teststrips.yolov4-416')
+#	outdir_overwrite	overwrite output director directory (default: True)
+#	tiny			is yolo-tiny or not (default: False)
+#	input_size		define input size of export model (default: 416)
+#	score_thres		define score threshold (default: 0.2)
+#	framework		define what framework do you want to convert (tf, trt, tflite) (default: 'tf')
+#	model			yolov3 or yolov4 (default: 'yolov4')
+def convert_detector(model_weights, model_names, output, outdir_overwrite=True, 
 		tiny=False, input_size = 416, score_thres = 0.2, framework = 'tf', model='yolov4'):
+	logging.info('Converting %s into Tensorflow model (output into %s)', model_weights, output) ## INFO
+	
+	## Check if weigths and names files exist
+	EXIT = False
+	if not os.path.exists(model_weights):
+		EXIT = True
+		logging.error('Weights file (%s) does not exist!', model_weights) ## ERROR
+	if not os.path.exists(model_names):
+		EXIT = True
+		logging.error('Names file (%s) does not exist!', model_names) ## ERROR
+	if EXIT:
+		sys.exit(1)
+	
+	## Remove exisiting model directory if it exists
+	if os.path.exists(output):
+		if outdir_overwrite:
+			logging.info('Detector directory %s already exists (from a previous run?) removing it so we can recreate it', output) ## INFO
+			shutil.rmtree(output)
+		else:
+			logging.error('Detector directory %s already exists (from a previous run?), will not overwrite!') ## ERROR
+			sys.exit(1)
+	
+	## Load veriables
 	strides, anchors, num_class, xyscale = utils.load_config(tiny, model, model_names)
 	input_layer = tf.keras.layers.Input([input_size, input_size, 3])
 	feature_maps = YOLO(input_layer, num_class, model, tiny)
@@ -66,6 +95,8 @@ def convert_to_Tensorflow_detector(model_weights, model_names, output,
 	utils.load_weights(model, model_weights, model, tiny)
 	model.summary()
 	model.save(output)
+	
+	logging.info('Done converting model') ## INFO
 
 
 
