@@ -26,7 +26,7 @@ Download the zipped dataset includes all images and related .txt files like show
 #### 3. Annotate (group and name)<br />
 To annotate, use the second square tool in right white bar to square the target area, then group and name every target areas. <br />
 NOTE: Annotations are CASE SENSITIVE, so label all images used for training a model with the exact same labels. <br />
-Annotation sample:![ed8f7710c01f4b22005a57eb09dc4ef](https://user-images.githubusercontent.com/99760789/156478377-41172c87-93b7-42b7-a5ca-9a9d479a781e.png)<br />
+Annotation sample:![eed6415d98702e9ff0b3778f4e7b269](https://user-images.githubusercontent.com/99760789/156896425-41ef0501-870f-4ddc-8442-670ae619b308.png)<br />
 #### 4. Assign<br />
 Assign images into train and valid datasets which are for training and validing the custom detector in 80%:20% ratio.<br />
 ![f0a4936550ebb131a5cf985d230dd0c](https://user-images.githubusercontent.com/99760789/156479422-732e1d7b-d7c1-45d2-9d44-8ffe5ba7e78e.png)<br />
@@ -43,7 +43,7 @@ In the pop-up dialog box, select 'YOLO Darknet' format and 'Download zip to comp
 ![export settings](https://user-images.githubusercontent.com/77503347/187276697-09bd6df6-8452-4d6a-a3c6-b277eb1931a2.png) <br /> 
 
 
-Download the zipped dataset includes all images and related .txt files like shown in images folder: ![9d7e3ded18702bbafbc578ca574cb30](https://user-images.githubusercontent.com/99760789/156482401-83e1e3f8-ffbe-4194-bb4d-89a36f65fbbb.png)<br />
+Download the zipped dataset includes all images and related .txt files like shown in images folder: ![image](https://user-images.githubusercontent.com/99760789/156896891-97db7fcd-7b06-419c-838c-3493afcd882e.png)<br />
 
 ## Train custom detector in Google Colab
 [![Train Custom Model In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1_GdoqCJWXsChrOiY8sZMr_zbr_fH-0Fg?usp=sharing) Before start the journey, make a copy of this Colab file.
