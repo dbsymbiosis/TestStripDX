@@ -8,19 +8,6 @@ YOLOv4 is a computer vision model for optimal speed and accuracy of object detec
 Before training custom detector, we need to prepare a dataset with annotations to provide your target areas to the model. Here, we utilized online annotation tool from the Roboflow which no needs to download and easy to use and save datasets: https://roboflow.com/annotate <br />
 The dataset need to be as versatile as you can. For CoralDX, we utilized 40 pictures in images folder to train. And after annotating, the Roboflow will give a corresponding .txt file with the coordinates of your selected target areas.<br />
 
-1. Get started<br />
-2. Create new project (name it)<br />
-3. Annotate (group and name)<br />
-![eed6415d98702e9ff0b3778f4e7b269](https://user-images.githubusercontent.com/99760789/156896425-41ef0501-870f-4ddc-8442-670ae619b308.png)<br />
-To annotate, use the second square tool in right white bar to square the target area, then group and name every target areas. <br />
-4. Assign<br />
-Assign images into train and valid datasets which are for training and validing the custom detector in 80%:20% ratio.<br />
-![f0a4936550ebb131a5cf985d230dd0c](https://user-images.githubusercontent.com/99760789/156479422-732e1d7b-d7c1-45d2-9d44-8ffe5ba7e78e.png)<br />
-5. Generate dataset<br />
-To generate dataset, in preprocessing section. We resized images in 416* 416 which can accelerate the training before downing annotated dataset: <br />
-![32fff1758cb5304017ab60be2cb7dec](https://user-images.githubusercontent.com/99760789/156482596-06d385ad-003d-489d-b997-52949351b6c9.png)  <br /> 
-6. Download <br />
-Download the zipped dataset includes all images and related .txt files like shown in images folder: ![image](https://user-images.githubusercontent.com/99760789/156896891-97db7fcd-7b06-419c-838c-3493afcd882e.png)<br />
 #### 1. Get started<br />
 #### 2. Create new project (name it)<br />
 #### 3. Annotate (group and name)<br />
