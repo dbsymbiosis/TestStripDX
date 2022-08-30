@@ -21,7 +21,29 @@ To generate dataset, in preprocessing section. We resized images in 416* 416 whi
 ![32fff1758cb5304017ab60be2cb7dec](https://user-images.githubusercontent.com/99760789/156482596-06d385ad-003d-489d-b997-52949351b6c9.png)  <br /> 
 6. Download <br />
 Download the zipped dataset includes all images and related .txt files like shown in images folder: ![image](https://user-images.githubusercontent.com/99760789/156896891-97db7fcd-7b06-419c-838c-3493afcd882e.png)<br />
+#### 1. Get started<br />
+#### 2. Create new project (name it)<br />
+#### 3. Annotate (group and name)<br />
+To annotate, use the second square tool in right white bar to square the target area, then group and name every target areas. <br />
+NOTE: Annotations are CASE SENSITIVE, so label all images used for training a model with the exact same labels. <br />
+Annotation sample:![ed8f7710c01f4b22005a57eb09dc4ef](https://user-images.githubusercontent.com/99760789/156478377-41172c87-93b7-42b7-a5ca-9a9d479a781e.png)<br />
+#### 4. Assign<br />
+Assign images into train and valid datasets which are for training and validing the custom detector in 80%:20% ratio.<br />
+![f0a4936550ebb131a5cf985d230dd0c](https://user-images.githubusercontent.com/99760789/156479422-732e1d7b-d7c1-45d2-9d44-8ffe5ba7e78e.png)<br />
+#### 5. Generate dataset<br />
+To generate dataset, in preprocessing section. We resized images in 416* 416 which can accelerate the training before downing annotated dataset: <br />
+![32fff1758cb5304017ab60be2cb7dec](https://user-images.githubusercontent.com/99760789/156482596-06d385ad-003d-489d-b997-52949351b6c9.png)  <br /> <br />
+For Augmentation, press Continue. <br /> 
+While generating dataset, your screen will look like this: <br />
+![generating loading screen](https://user-images.githubusercontent.com/77503347/187273187-eb2118a2-51c9-40f8-9a73-6462a6a67ee0.png)<br />
+#### 6. Export and Download <br />
+After generating the dataset, click on the 'Export' option to export and download your dataset. <br /> 
+![export option](https://user-images.githubusercontent.com/77503347/187276282-9d194f83-3890-4f15-85a8-cb54a2ab78c1.png) <br /> 
+In the pop-up dialog box, select 'YOLO Darknet' format and 'Download zip to computer' option. <br />
+![export settings](https://user-images.githubusercontent.com/77503347/187276697-09bd6df6-8452-4d6a-a3c6-b277eb1931a2.png) <br /> 
 
+
+Download the zipped dataset includes all images and related .txt files like shown in images folder: ![9d7e3ded18702bbafbc578ca574cb30](https://user-images.githubusercontent.com/99760789/156482401-83e1e3f8-ffbe-4194-bb4d-89a36f65fbbb.png)<br />
 
 ## Train custom detector in Google Colab
 [![Train Custom Model In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1_GdoqCJWXsChrOiY8sZMr_zbr_fH-0Fg?usp=sharing) Before start the journey, make a copy of this Colab file.
