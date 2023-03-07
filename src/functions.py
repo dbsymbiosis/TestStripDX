@@ -32,7 +32,7 @@ def count_objects(data, allowed_classes, class_names, by_class = False):
     return counts
 
 # function for cropping each detection and saving as new image
-def crop_objects(img, data, path, allowed_classes, class_names):
+def crop_objects(img, data, path, allowed_classes, class_names, crop_offset=0):
     boxes, scores, classes, num_objects = data
     #create dictionary to hold count of objects for image name
     counts = dict()
@@ -44,8 +44,8 @@ def crop_objects(img, data, path, allowed_classes, class_names):
             counts[class_name] = counts.get(class_name, 0) + 1
             # get box coords
             xmin, ymin, xmax, ymax = boxes[i]
-            # crop detection from image (take an additional 5 pixels around all edges)
-            cropped_img = img[int(ymin)-5:int(ymax)+5, int(xmin)-5:int(xmax)+5]
+            # crop detection from image (take an additional x pixels around all edges; default 0)
+            cropped_img = img[int(ymin)-crop_offset:int(ymax)+crop_offset, int(xmin)-crop_offset:int(xmax)+crop_offset]
             # construct image name and join it to path for saving crop properly
             img_name = class_name + '_' + str(counts[class_name]) + '.png'
             img_path = os.path.join(path, img_name )

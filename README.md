@@ -30,25 +30,25 @@ conda activate yolov4-gpu
 
 ## Deploy .weights file into the Tensorflow
 
-We now need to download and setup the weights files that are used by `TestStripDX` for its analysis. 
-Download files.
+We now need to download and setup the weights files that are used by `TestStripDX` for its analysis.
+
+
+Download files (not yet uploaded).
 ```bash
 wget 
 wget 
+wegt
 ```
-
 Copy and paste your custom .weights file into the 'data' folder and copy and paste your custom .names into the 'models/' folder.
 
 
-
 Convert yolov4 detector to Tensorflow detector
-
 ```bash
 ./TestStripDX.py convert -m URS10
 ```
 
-Crop and save target areas as new images
 
+Crop and save target areas as new images
 ```bash
 ./TestStripDX.py process -m URS10 -v video1.mp4 video2.mp4 video3.mp4 .. ..
 ```
@@ -61,15 +61,15 @@ Will also produce REA values. If a blank sample is prodided this will be used fo
 ./TestStripDX.py combine -m URS10 -b video1.mp4.TestStripDX.results.txt -t video2.mp4.TestStripDX.results.txt video3.mp4.TestStripDX.results.txt -o combined_results.txt
 ```
 
-Test TestStripDX.
-Predict, predict and crop images.![3c7df9efa8480c71d55df8defe897db](https://user-images.githubusercontent.com/99760789/156899115-35268c08-938d-4c40-8d95-a781382dfe52.png)
+For each of your input videos there should also be a PDF file created called `*.TestStripDX.detection.pdf`. This document is simply a combination/concatenation of the images extracted from the video that was processed, and that were used to derive the intensity values. Its main use is to allow easy double checking of the computer vision component of the workflow (i.e., to double check that the correct tests were identified by the vision system at the correct time points).
 
-Note: The showing labels are not related to the actual reagents, but the showing labels are exact same for each images. So, we correct this in .m file. We will retrain the model to try to correct this error.
-
-Measure RGB values.
-  ![4eb2e7d3cee213a42dfdbd4567ca0c9](https://user-images.githubusercontent.com/99760789/156899174-25a657f6-9c7c-4c9b-b394-28e9b76d6a49.png)
+Ideally, your images should look similar (with maybe some boxes missing or orders swapped) to this image.
+![3c7df9efa8480c71d55df8defe897db](https://user-images.githubusercontent.com/99760789/156899115-35268c08-938d-4c40-8d95-a781382dfe52.png)
 
 
-
+If you wish to combine the `*.TestStripDX.detection.pdf` files together to make it easier to scan through, use the following command.
+```bash
+./TestStripDX.py joinPDFs -o merged.pdf -i *.TestStripDX.detection.pdf
+```
 
 
