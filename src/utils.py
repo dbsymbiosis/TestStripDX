@@ -212,8 +212,10 @@ def format_boxes(bboxes, image_height, image_width):
         box[0], box[1], box[2], box[3] = xmin, ymin, xmax, ymax
     return bboxes
 
-def draw_bbox(image, bboxes, allowed_classes, classes, info = False, counted_classes = None, show_label=True, read_plate = False):
-    num_classes = len(classes)
+def draw_bbox(image, bboxes, info = False, counted_classes = None, show_label=True, read_plate = False):
+    out_bboxes, names, times, num_objects = bboxes
+    
+    num_classes = num_objects
     image_h, image_w, _ = image.shape
     hsv_tuples = [(1.0 * x / num_classes, 1., 1.) for x in range(num_classes)]
     colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
@@ -222,15 +224,11 @@ def draw_bbox(image, bboxes, allowed_classes, classes, info = False, counted_cla
     random.seed(0)
     random.shuffle(colors)
     random.seed(None)
-
-    out_boxes, out_scores, out_classes, num_boxes = bboxes
-    for i in range(num_boxes):
-        if int(out_classes[i]) < 0 or int(out_classes[i]) > num_classes: continue
+    
+    for i in range(num_objects):
         coor = out_boxes[i]
         fontScale = 0.5
-        score = out_scores[i]
-        class_ind = int(out_classes[i])
-        class_name = classes[class_ind]
+        class_name = names[i]
         if class_name not in allowed_classes:
             continue
         else:
@@ -247,10 +245,10 @@ def draw_bbox(image, bboxes, allowed_classes, classes, info = False, counted_cla
             cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
 
             if info:
-                print("Object found: {}, Confidence: {:.2f}, BBox Coords (xmin, ymin, xmax, ymax): {}, {}, {}, {} ".format(class_name, score, coor[0], coor[1], coor[2], coor[3]))
+                print("Object found: {}, BBox Coords (xmin, ymin, xmax, ymax): {}, {}, {}, {} ".format(class_name, coor[0], coor[1], coor[2], coor[3]))
 
             if show_label:
-                bbox_mess = '%s: %.2f' % (class_name, score)
+                bbox_mess = '%s' % (class_name)
                 t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick // 2)[0]
                 c3 = (c1[0] + t_size[0], c1[1] - t_size[1] - 3)
                 cv2.rectangle(image, c1, (np.float32(c3[0]), np.float32(c3[1])), bbox_color, -1) #filled

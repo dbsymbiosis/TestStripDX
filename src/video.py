@@ -35,9 +35,8 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 	if EXIT:
 		sys.exit(1)
 	
-	## Extract names and times to extract from video.
-	names = [x[0] for x in intervals]
-	times = [x[1] for x in intervals]
+	## Times to extract from video - make unique and sort.
+	times = sorted(set([x[1] for x in intervals]))
 	
 	for video in videos:
 		outdir = video+outdir_suffix
@@ -77,7 +76,7 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 		capture_frame(video, frame_prefix, times)
 		
 		## Extract tests from frames
-		for name, time in intervals:
+		for time in times:
 			frame_in = frame_prefix+"."+str(time)+"sec.png"
 			frame_out = frame_prefix+"."+str(time)+"sec.detect"
 			detection_images.append(frame_prefix+"."+str(time)+"sec.detect.detection1.png")
@@ -85,7 +84,7 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 			logging.info('Searching %s frame at time %s seconds', name, time) ## INFO
 			logging.debug('In frame: %s', frame_in) ## DEBUG
 			logging.debug('Out prefix: %s', frame_out) ## DEBUG
-			detect_test_strip(model_detector, model_names, [frame_in], frame_out, count=True, info=True)
+			detect_test_strip(frame_in, frame_out, intervals, count=True, info=True)
 			
 			## Check to see if our target frame has been extracted
 			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", name+"_1.png")
