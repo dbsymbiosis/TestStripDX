@@ -212,7 +212,7 @@ def format_boxes(bboxes, image_height, image_width):
         box[0], box[1], box[2], box[3] = xmin, ymin, xmax, ymax
     return bboxes
 
-def draw_bbox(image, bboxes, info = False, counted_classes = None, show_label=True, read_plate = False):
+def draw_bbox(image, bboxes, info = True, show_label=True):
     out_boxes, names, times, num_objects = bboxes
     
     num_classes = num_objects
@@ -229,40 +229,21 @@ def draw_bbox(image, bboxes, info = False, counted_classes = None, show_label=Tr
         coor = out_boxes[i]
         fontScale = 0.5
         class_name = names[i]
-        if class_name not in allowed_classes:
-            continue
-        else:
-            if read_plate:
-                height_ratio = int(image_h / 25)
-                plate_number = recognize_plate(image, coor)
-                if plate_number != None:
-                    cv2.putText(image, plate_number, (int(coor[0]), int(coor[1]-height_ratio)), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.25, (255,255,0), 2)
-
-            bbox_color = colors[class_ind]
-            bbox_thick = int(0.6 * (image_h + image_w) / 600)
-            c1, c2 = (coor[0], coor[1]), (coor[2], coor[3])
-            cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
-
-            if info:
-                print("Object found: {}, BBox Coords (xmin, ymin, xmax, ymax): {}, {}, {}, {} ".format(class_name, coor[0], coor[1], coor[2], coor[3]))
-
-            if show_label:
-                bbox_mess = '%s' % (class_name)
-                t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick // 2)[0]
-                c3 = (c1[0] + t_size[0], c1[1] - t_size[1] - 3)
-                cv2.rectangle(image, c1, (np.float32(c3[0]), np.float32(c3[1])), bbox_color, -1) #filled
-
-                cv2.putText(image, bbox_mess, (c1[0], np.float32(c1[1] - 2)), cv2.FONT_HERSHEY_SIMPLEX,
-                        fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
-
-            if counted_classes != None:
-                height_ratio = int(image_h / 25)
-                offset = 15
-                for key, value in counted_classes.items():
-                    cv2.putText(image, "{}s detected: {}".format(key, value), (5, offset),
-                            cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 2)
-                    offset += height_ratio
+        bbox_color = colors[class_ind]
+        bbox_thick = int(0.6 * (image_h + image_w) / 600)
+        c1, c2 = (coor[0], coor[1]), (coor[2], coor[3])
+        cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
+        
+        if info:
+            print("Object found: {}, BBox Coords (xmin, ymin, xmax, ymax): {}, {}, {}, {} ".format(class_name, coor[0], coor[1], coor[2], coor[3]))
+        
+        if show_label:
+            bbox_mess = '%s' % (class_name)
+            t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick // 2)[0]
+            c3 = (c1[0] + t_size[0], c1[1] - t_size[1] - 3)
+            cv2.rectangle(image, c1, (np.float32(c3[0]), np.float32(c3[1])), bbox_color, -1) #filled
+            cv2.putText(image, bbox_mess, (c1[0], np.float32(c1[1] - 2)), cv2.FONT_HERSHEY_SIMPLEX,
+                    fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
     return image
 
 def bbox_iou(bboxes1, bboxes2):
