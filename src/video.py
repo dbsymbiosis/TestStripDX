@@ -85,15 +85,11 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 			logging.debug('In frame: %s', frame_in) ## DEBUG
 			logging.debug('Out prefix: %s', frame_out) ## DEBUG
 			detect_test_strip(frame_in, frame_out, intervals, count=True, info=True)
-			
-			## Check to see if our target frame has been extracted
-			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", name+"_1.png")
-			logging.debug('Searching for cropped test: %s', target_frame) ## DEBUG
-			if os.path.exists(target_frame):
-				score = extract_colors(target_frame)
-			else:
-				logging.warning('No frame detected for %s frame at time %s seconds', name, time) ## WARNING
-				score = 'NA'
+		
+		for name, time, xmin, xmax, ymin, ymax in intervals:
+			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", name+".png")
+			logging.debug('Searching for %s test in %s', name, target_frame) ## DEBUG
+			score = extract_colors(target_frame)
 			results.write(name+'\t'+str(score)+'\n')
 			logging.debug('Score: %s', score) ## DEBUG
 		
