@@ -4,8 +4,7 @@ import logging
 import numpy as np
 from moviepy import *
 import moviepy.editor as mpy
-from PIL import Image
-from PIL import ImageDraw
+from PIL import Image, ImageDraw
 from src.image import *
 
 
@@ -19,14 +18,16 @@ from src.image import *
 #	outdir_suffix		suffix to add to output results files
 #	outdir_overwrite	overwrite output director directory (default: True)
 def process_videos(videos, intervals, cleanup, outdir_suffix, outdir_overwrite=True):
+	logging.info('####') ## INFO
 	logging.info('#### Processing video files') ## INFO
+	logging.info('####') ## INFO
 	
 	## Times to extract from video - make unique and sort.
-	times = sorted(set([x[1] for x in intervals]))
+	# Add time 0 to list to use as blank
+	times = [0] + sorted(set([x[1] for x in intervals]))
 	
 	for video in videos:
-		logging.info('##', video) ## INFO
-		logging.info('## Extracting frames from %s', video) ## INFO
+		logging.info('# Extracting frames from %s', video) ## INFO
 		
 		outdir = video+outdir_suffix
 		results_file = outdir+'.results.txt'
@@ -52,9 +53,6 @@ def process_videos(videos, intervals, cleanup, outdir_suffix, outdir_overwrite=T
 		## Create output directory (after removing existing if present)
 		os.mkdir(outdir)
 		
-		## Open results file
-		results = open(results_file, 'w')
-		
 		## Extract frame from a specific timestamp in a video.
 		capture_frame(video, frame_prefix, times)
 		
@@ -68,7 +66,21 @@ def process_videos(videos, intervals, cleanup, outdir_suffix, outdir_overwrite=T
 			logging.debug('In frame: %s', frame_in) ## DEBUG
 			logging.debug('Out prefix: %s', frame_out) ## DEBUG
 			
-			detect_test_strip(frame_in, frame_out, intervals)
+			crop_test_strip(frame_in, frame_out, intervals)
+		
+		## Extract "blank" time 0 values for each test
+		blank_values = {}
+		for name, time, xmin, xmax, ymin, ymax in intervals:
+			target_frame = os.path.join(frame_prefix+"."+str(0)+"sec.detect.crop", name+".png")
+			logging.debug('Searching for %s test in %s', name, target_frame) ## DEBUG
+			
+			score = extract_colors(target_frame)
+			logging.debug('Score: %s', score) ## DEBUG
+			
+			blank_values[name] = score
+		
+		## Open results file
+		results = open(results_file, 'w')
 		
 		## Generate a score for each test crop from the specificed time frame.
 		for name, time, xmin, xmax, ymin, ymax in intervals:
@@ -78,7 +90,10 @@ def process_videos(videos, intervals, cleanup, outdir_suffix, outdir_overwrite=T
 			score = extract_colors(target_frame)
 			logging.debug('Score: %s', score) ## DEBUG
 			
-			results.write(name+'\t'+str(score)+'\n')
+			adj_score = blank_values[name] - score
+			logging.debug('Score: %s', adj_score) ## DEBUG
+			
+			results.write(name+'\t'+str(adj_score)+'\n')
 		
 		## Close results file
 		results.close()
@@ -101,11 +116,11 @@ def process_videos(videos, intervals, cleanup, outdir_suffix, outdir_overwrite=T
 			logging.info('Cleaning up - removing %s', outdir) ## INFO
 			shutil.rmtree(outdir)
 		
-		logging.info('## Finished. Results in %s', results_file) ## INFO
+		logging.info('# Finished. Results in %s', results_file) ## INFO
 	
-	logging.info('########################################################') ## INFO
-	logging.info('Finished processing video files') ## INFO
-	logging.info('########################################################') ## INFO
+	logging.info('####') ## INFO
+	logging.info('#### Finished processing video files') ## INFO
+	logging.info('####') ## INFO
 
 
 

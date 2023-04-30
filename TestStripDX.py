@@ -5,6 +5,7 @@ import argparse
 from argparse import RawTextHelpFormatter
 import logging
 
+ALLOWED_MODELS= ['URS10']
 
 
 ##
@@ -37,8 +38,8 @@ parser_process_video.add_argument('-v', '--videos', metavar='teststrip.mp4',
 	help='Video files to process'
 )
 parser_process_video.add_argument('-m', '--model', metavar='model_name',
-	required=False, type=str, default='URS10',
-	help='Name of model in models/ directory to convert (NOTE: models/model_name.* file needs to exist)'
+	required=False, type=str, default='URS10', choices=ALLOWED_MODELS,
+	help='Name of test strip being run (default: %(default)s; choices: [%(choices)s])'
 )
 parser_process_video.add_argument('-s', '--suffix', metavar='TestStripDX',
 	required=False, type=str, default='.TestStripDX',
@@ -77,9 +78,9 @@ parser_combine_results.add_argument('-o', '--out', metavar='output.txt',
 	help='Output file (default: stdout)'
 )
 parser_combine_results.add_argument('-m', '--model', metavar='model_name',
-	required=False, type=str, default='URS10',
-	help='Name of model in models/ directory to convert (NOTE: models/model_name.* file needs to exist)'
-       )
+	required=False, type=str, default='URS10', choices=ALLOWED_MODELS,
+	help='Name of test strip being run (default: %(default)s ; choices: [%(choices)s])'
+)
 parser_combine_results.add_argument('--debug',
 	required=False, action='store_true',
 	help='Print DEBUG info (default: %(default)s)'
@@ -142,17 +143,17 @@ logging.info('########################################################') ## INFO
 if args.command != 'joinPDFs':
 	script_dir = os.path.abspath(os.path.dirname(__file__))
 	models_dir       = 'models'
-	model_targets_f  = os.path.join(script_dir, models_dir, args.model+'.targets')
+	model_intervals  = os.path.join(script_dir, models_dir, args.model)
 	
 	## Load targets info
-	logging.info('Opening file %s with list of target tests', model_targets_f) ## INFO
-	if not os.path.exists(model_targets_f):
-		logging.error('Targets file (%s) does not exist!', model_targets_f) ## ERROR
+	logging.info('Opening file %s with list of target tests', model_intervals) ## INFO
+	if not os.path.exists(model_intervals):
+		logging.error('Targets file (%s) does not exist!', model_intervals) ## ERROR
 		sys.exit(1)
 	
 	## Open targets file and convert to [[str, int, float, float, float, float], [str, int, float, float, float, float], ...]
 	model_targets = list()
-	with open(model_targets_f, 'r') as fh:
+	with open(model_intervals, 'r') as fh:
 		for line in fh:
 			line = line.strip()
 			# Ignore empty or commented out characters

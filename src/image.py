@@ -7,9 +7,7 @@ import colorsys
 import re
 import numpy as np
 from PIL import Image
-import src.utils as utils
-from src.functions import *
-import imageio.v2 as imageio
+import imageio as imageio
 
 
 
@@ -31,8 +29,8 @@ def crop_test_strip(image_path, output, intervals,
 	
 	# hold all detection data in one variable
 	bboxes = np.array([ [xmin, ymin, xmax, ymax] for name, time, xmin, xmax, ymin, ymax in intervals], dtype=np.float32)
-	times = np.array([ [time] for name, time, xmin, xmax, ymin, ymax in intervals], dtype=np.int32)
-	names = np.array([ [name] for name, time, xmin, xmax, ymin, ymax in intervals], dtype=np.str)
+	times = np.array([ time for name, time, xmin, xmax, ymin, ymax in intervals], dtype=np.int32)
+	names = np.array([ name for name, time, xmin, xmax, ymin, ymax in intervals], dtype=str)
 	num_objects = len(names)
 	pred_bbox = [bboxes, names, times, num_objects]
 	
@@ -45,7 +43,7 @@ def crop_test_strip(image_path, output, intervals,
 	crop_objects(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), pred_bbox, crop_path)
 	
 	# draw colored boxes on image
-	image = utils.draw_bbox(original_image, pred_bbox)
+	image = draw_bbox(original_image, pred_bbox)
 	
 	image = Image.fromarray(image.astype(np.uint8))
 	image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
@@ -82,7 +80,7 @@ def crop_objects(img, data, path, crop_offset=0):
 		cropped_img = img[int(ymin)-crop_offset:int(ymax)+crop_offset, int(xmin)-crop_offset:int(xmax)+crop_offset]
 		
 		# construct image name and join it to path for saving crop properly
-		img_name = names[i][0] + '.png'
+		img_name = names[i] + '.png'
 		img_path = os.path.join(path, img_name )
 		
 		# save image
@@ -90,7 +88,7 @@ def crop_objects(img, data, path, crop_offset=0):
 
 
 
-def draw_bbox(image, bboxes, info = True, show_label=True):
+def draw_bbox(image, bboxes, info = False, show_label=True):
 	out_boxes, names, times, num_objects = bboxes
 	
 	num_classes = num_objects
@@ -106,10 +104,10 @@ def draw_bbox(image, bboxes, info = True, show_label=True):
 	for i in range(num_objects):
 		coor = out_boxes[i]
 		fontScale = 0.5
-		class_name = names[i][0]
+		class_name = names[i]
 		bbox_color = colors[i]
 		bbox_thick = int(0.6 * (image_h + image_w) / 600)
-		c1, c2 = (coor[0], coor[1]), (coor[2], coor[3])
+		c1, c2 = (int(coor[0]), int(coor[1])), (int(coor[2]), int(coor[3]))
 		cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
 		
 		if info:
@@ -119,8 +117,8 @@ def draw_bbox(image, bboxes, info = True, show_label=True):
 			bbox_mess = '%s' % (class_name)
 			t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick // 2)[0]
 			c3 = (c1[0] + t_size[0], c1[1] - t_size[1] - 3)
-			cv2.rectangle(image, c1, (np.float32(c3[0]), np.float32(c3[1])), bbox_color, -1) #filled
-			cv2.putText(image, bbox_mess, (c1[0], np.float32(c1[1] - 2)), cv2.FONT_HERSHEY_SIMPLEX,
+			cv2.rectangle(image, c1, c3, bbox_color, -1) #filled
+			cv2.putText(image, bbox_mess, (c1[0], c1[1] - 2), cv2.FONT_HERSHEY_SIMPLEX,
 					fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
 	return image
 

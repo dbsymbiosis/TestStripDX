@@ -11,26 +11,33 @@ from PyPDF2 import PdfFileMerger
 #	outfile		output combined results file
 #	intervals	time intervals to collect frames from videos
 def combine_results(test_files, outfile, intervals):
+	logging.info('####') ## INFO
+	logging.info('#### Combining results files') ## INFO
+	logging.info('####') ## INFO
+
 	logging.info('Combining results files') ## INFO
 	
 	## Extract names and times to extract from video.
 	names = [x[0] for x in intervals]
 	
 	## Header
-	t = 'Files\ttype'
+	t = 'Files'
 	for name in names:
 		t = t + '\t' + name + '_intensity'
 	outfile.write(t + '\n')
 
 	## Test strips
 	for test_file in test_files:
-		logging.debug('Loading results file: %s', test_file.name) ## DEBUG
+		logging.info('Loading results file: %s', test_file.name) ## INFO
 		results = load_results(test_file, names)
+		t = test_file.name
 		for name in names:
 			t = t + '\t' + str(results[name])
 		outfile.write(t + '\n')
 	
-	logging.info('Done combining results files') ## INFO
+	logging.info('####') ## INFO
+	logging.info('#### Finished combining results files') ## INFO
+	logging.info('####') ## INFO
 
 
 
@@ -73,14 +80,21 @@ def load_results(results_file, names, delimiter='\t'):
 # 	input_PDFs	input PDF files
 #	output_file	outout combined PDF file
 def joinPDFs(input_PDFs, output_file):
+	logging.info('####') ## INFO
+	logging.info('#### Merging PDF files') ## INFO
+	logging.info('####') ## INFO
 	## See https://stackoverflow.com/questions/3444645/merge-pdf-files
 	merger = PdfFileMerger(strict=False)
 	
 	for pdf in input_PDFs:
+		logging.info('Merging PDF file: %s', pdf) ## INFO
 		merger.append(pdf)	
 	
 	merger.write(output_file)
 	merger.close()
+	logging.info('####') ## INFO
+	logging.info('#### Finished merging PDF files') ## INFO
+	logging.info('####') ## INFO
 
 
 
