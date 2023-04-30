@@ -39,8 +39,7 @@ from tensorflow.compat.v1 import InteractiveSession
 #	plate		perform license plate recognition (default: False)
 
 def detect_test_strip(image_path, output, intervals,
-		input_size=416, 
-		tiny=False, info=False):
+		input_size=416):
 	
 	original_image = cv2.imread(image_path)
 	original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
@@ -64,7 +63,7 @@ def detect_test_strip(image_path, output, intervals,
 	crop_objects(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), pred_bbox, crop_path)
 	
 	# draw colored boxes on image
-	image = utils.draw_bbox(original_image, pred_bbox, info)
+	image = utils.draw_bbox(original_image, pred_bbox)
 	
 	image = Image.fromarray(image.astype(np.uint8))
 	image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)

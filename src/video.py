@@ -84,7 +84,7 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 			logging.info('Searching for tests in time %s seconds image', time) ## INFO
 			logging.debug('In frame: %s', frame_in) ## DEBUG
 			logging.debug('Out prefix: %s', frame_out) ## DEBUG
-			detect_test_strip(frame_in, frame_out, intervals, count=True, info=True)
+			detect_test_strip(frame_in, frame_out, intervals)
 		
 		for name, time, xmin, xmax, ymin, ymax in intervals:
 			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", name+".png")
