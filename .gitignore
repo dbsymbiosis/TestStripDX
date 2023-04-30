@@ -1,0 +1,4 @@
+*.sif
+models/*
+test/*
+__pycache__
