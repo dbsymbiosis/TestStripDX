@@ -4,10 +4,9 @@ channels:
 - anaconda
 - conda-forge
 dependencies:
-  - python==3.7
+  - python==3.7.2
   - pip
   - matplotlib
-  - opencv
   - moviepy
   - pypdf2
   - pip:
