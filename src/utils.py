@@ -228,7 +228,7 @@ def draw_bbox(image, bboxes, info = True, show_label=True):
     for i in range(num_objects):
         coor = out_boxes[i]
         fontScale = 0.5
-        class_name = names[i]
+        class_name = names[i][0]
         bbox_color = colors[i]
         bbox_thick = int(0.6 * (image_h + image_w) / 600)
         c1, c2 = (coor[0], coor[1]), (coor[2], coor[3])

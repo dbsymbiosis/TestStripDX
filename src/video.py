@@ -79,7 +79,7 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 		for time in times:
 			frame_in = frame_prefix+"."+str(time)+"sec.png"
 			frame_out = frame_prefix+"."+str(time)+"sec.detect"
-			detection_images.append(frame_prefix+"."+str(time)+"sec.detect.detection1.png")
+			detection_images.append(frame_prefix+"."+str(time)+"sec.detect.detection.png")
 			
 			logging.info('Searching for tests in time %s seconds image', time) ## INFO
 			logging.debug('In frame: %s', frame_in) ## DEBUG
