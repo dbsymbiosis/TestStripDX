@@ -81,7 +81,7 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 			frame_out = frame_prefix+"."+str(time)+"sec.detect"
 			detection_images.append(frame_prefix+"."+str(time)+"sec.detect.detection1.png")
 			
-			logging.info('Searching %s frame at time %s seconds', name, time) ## INFO
+			logging.info('Searching for tests in time %s seconds image', time) ## INFO
 			logging.debug('In frame: %s', frame_in) ## DEBUG
 			logging.debug('Out prefix: %s', frame_out) ## DEBUG
 			detect_test_strip(frame_in, frame_out, intervals, count=True, info=True)
