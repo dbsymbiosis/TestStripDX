@@ -1,4 +1,4 @@
-name: yolov4-cpu
+name: TestStripDX-cpu
 
 channels:
 - anaconda
