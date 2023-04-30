@@ -67,7 +67,7 @@ def detect_test_strip(image_path, output, intervals,
 	
 	image = Image.fromarray(image.astype(np.uint8))
 	image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
-	cv2.imwrite(output + '.detection' + str(count) + '.png', image)
+	cv2.imwrite(output + '.detection.png', image)
 	
 	# Close interactive session
 	session.close()
