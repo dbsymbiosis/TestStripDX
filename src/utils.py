@@ -213,7 +213,7 @@ def format_boxes(bboxes, image_height, image_width):
     return bboxes
 
 def draw_bbox(image, bboxes, info = False, counted_classes = None, show_label=True, read_plate = False):
-    out_bboxes, names, times, num_objects = bboxes
+    out_boxes, names, times, num_objects = bboxes
     
     num_classes = num_objects
     image_h, image_w, _ = image.shape
