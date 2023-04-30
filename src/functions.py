@@ -40,7 +40,7 @@ def crop_objects(img, data, path, crop_offset=0):
         # crop detection from image (take an additional x pixels around all edges; default 0)
         cropped_img = img[int(ymin)-crop_offset:int(ymax)+crop_offset, int(xmin)-crop_offset:int(xmax)+crop_offset]
         # construct image name and join it to path for saving crop properly
-        img_name = name[i] + '.png'
+        img_name = names[i] + '.png'
         img_path = os.path.join(path, img_name )
         # save image
         cv2.imwrite(img_path, cropped_img)
