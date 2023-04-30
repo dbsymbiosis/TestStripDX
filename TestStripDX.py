@@ -187,7 +187,7 @@ if args.command != 'joinPDFs':
 				continue
 			
 			name, time, xmin, xmax, ymin, ymax = line.split('\t')
-			model_targets.append([x, int(y), float(xmin), float(xmax), float(ymin), float(ymax)])
+			model_targets.append([name, int(time), float(xmin), float(xmax), float(ymin), float(ymax)])
 	logging.debug('model_targets: %s', model_targets) ## DEBUG
 
 
