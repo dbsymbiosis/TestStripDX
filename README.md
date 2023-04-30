@@ -1,4 +1,4 @@
-# TestStripDX
+# TestStripDX - ML
 
 TestStripDX: An image processing framework for processing and extracting test strip results from a photo.
 This repo walks you through how to analyze videos of test strips using YOLOv4 and Tensorflow.
