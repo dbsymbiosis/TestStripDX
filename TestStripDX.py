@@ -21,29 +21,6 @@ parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpForm
 subparsers = parser.add_subparsers(dest='command', required=True)
 
 ##
-## Parser for the conversion of the yolov4 to Tensorflow detector
-##
-CONVERT_DETECTOR_DESCRIPTION = '''
-
-Convert yolov4 detector to Tensorflow detector
-
-Needs models/model_name.weights and models/model_name.names to exist.
-
-'''
-parser_convert_detector = subparsers.add_parser('convert', 
-	help='Convert yolov4 detector to Tensorflow detector',
-	description=CONVERT_DETECTOR_DESCRIPTION
-)
-parser_convert_detector.add_argument('-m', '--model', metavar='model_name', 
-	required=True, type=str, default='URS10', 
-	help='Name of model in models/ directory to convert (NOTE: models/model_name.* file needs to exist)'
-)
-parser_convert_detector.add_argument('--debug',
-	required=False, action='store_true',
-	help='Print DEBUG info (default: %(default)s)'
-)
-
-##
 ## Parser for the processing of the test strip video files
 ##
 PROCESS_VIDEOS_DESCRIPTION = '''
@@ -98,10 +75,6 @@ parser_combine_results.add_argument('-t', '--test_results', metavar='test_result
 parser_combine_results.add_argument('-o', '--out', metavar='output.txt',
 	required=False, default=sys.stdout, type=argparse.FileType('w'),
 	help='Output file (default: stdout)'
-)
-parser_combine_results.add_argument('-b', '--blank_results', metavar='blank_results.txt',
-	required=False, default=None, type=argparse.FileType('r'),
-	help='Input blank strip results files (default: not used)'
 )
 parser_combine_results.add_argument('-m', '--model', metavar='model_name',
 	required=False, type=str, default='URS10',
@@ -161,14 +134,14 @@ if args.debug:
 logging.debug('%s', args) ## DEBUG
 
 
+logging.info('########################################################') ## INFO
+logging.info('                   TestStripDX Started                  ') ## INFO
+logging.info('########################################################') ## INFO
 
 ## Model variables
 if args.command != 'joinPDFs':
 	script_dir = os.path.abspath(os.path.dirname(__file__))
 	models_dir       = 'models'
-	model_weights    = os.path.join(script_dir, models_dir, args.model+'.weights')
-	model_names      = os.path.join(script_dir, models_dir, args.model+'.names')
-	model_detector   = os.path.join(script_dir, models_dir, args.model+'.detector')
 	model_targets_f  = os.path.join(script_dir, models_dir, args.model+'.targets')
 	
 	## Load targets info
@@ -177,7 +150,7 @@ if args.command != 'joinPDFs':
 		logging.error('Targets file (%s) does not exist!', model_targets_f) ## ERROR
 		sys.exit(1)
 	
-	## Open targets file and convert to [[str, int], [str, int], ...]
+	## Open targets file and convert to [[str, int, float, float, float, float], [str, int, float, float, float, float], ...]
 	model_targets = list()
 	with open(model_targets_f, 'r') as fh:
 		for line in fh:
@@ -195,18 +168,21 @@ if args.command != 'joinPDFs':
 ## Run subcommand
 #	NOTE: Import each set of functions as needed becuase many of the packages take >30 sec to import
 #	      so we need to only run import when we need to
-if args.command == 'convert':
-	from src.detector import *
-	convert_detector(model_weights, model_names, model_detector)
-elif args.command == 'process':
+if args.command == 'process':
 	from src.video import *
-	process_videos(args.videos, model_detector, model_names, model_targets, args.cleanup, args.suffix)
+	process_videos(args.videos, model_targets, args.cleanup, args.suffix)
 elif args.command == 'combine':
 	from src.merge import *
-	combine_results(args.test_results, args.blank_results, args.out, model_targets)
+	combine_results(args.test_results, args.out, model_targets)
 elif args.command == 'joinPDFs':
 	from src.merge import *
 	joinPDFs(args.infiles, args.out)
+
+
+
+logging.info('########################################################') ## INFO
+logging.info('                   TestStripDX Finished                 ') ## INFO
+logging.info('########################################################') ## INFO
 
 
 

@@ -6,8 +6,7 @@ from moviepy import *
 import moviepy.editor as mpy
 from PIL import Image
 from PIL import ImageDraw
-import imageio.v2 as imageio
-from src.detector import *
+from src.image import *
 
 
 
@@ -15,42 +14,25 @@ from src.detector import *
 #
 # Parameters:
 #	videos			input video files
-#	model_detector		path to Tensorflow detector file (e.g., 'models/teststrips.detector')
-#	model_names		path to names file (e.g., 'models/teststrips.names')
 #	intervals		time intervals to collect frames from videos
 #	cleanup			cleanup temp files once finished processing video
 #	outdir_suffix		suffix to add to output results files
 #	outdir_overwrite	overwrite output director directory (default: True)
-def process_videos(videos, model_detector, model_names, intervals, cleanup, outdir_suffix, outdir_overwrite=True):
-	logging.info('Processing video files') ## INFO
-	
-	## Check if detector directory exist
-	EXIT = False
-	if not os.path.exists(model_detector):
-		EXIT = True
-		logging.error('Detector (%s) does not exist! Try running the "convert" command first.', model_detector) ## ERROR
-	if not os.path.exists(model_names):
-		EXIT = True
-		logging.error('Names file (%s) does not exist!', model_names) ## ERROR
-	if EXIT:
-		sys.exit(1)
+def process_videos(videos, intervals, cleanup, outdir_suffix, outdir_overwrite=True):
+	logging.info('#### Processing video files') ## INFO
 	
 	## Times to extract from video - make unique and sort.
 	times = sorted(set([x[1] for x in intervals]))
 	
 	for video in videos:
+		logging.info('##', video) ## INFO
+		logging.info('## Extracting frames from %s', video) ## INFO
+		
 		outdir = video+outdir_suffix
 		results_file = outdir+'.results.txt'
 		frame_prefix = os.path.join(outdir, "frame")
 		detection_images = []
 		detection_pdf_path = outdir+'.detection.pdf'
-		
-		logging.info('########################################################') ## INFO
-		logging.info('## Extracting frames from %s', video) ## INFO
-		logging.info('########################################################') ## INFO
-		
-		## Create output directory
-		logging.debug('out_dir=%s', outdir) ## DEBUG
 		
 		## Check if video file exists.
 		if not os.path.exists(video):
@@ -58,6 +40,7 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 			sys.exit(1)
 		
 		## Remove exisiting model directory if it exists
+		logging.debug('out_dir=%s', outdir) ## DEBUG
 		if os.path.exists(outdir):
 			if outdir_overwrite:
 				logging.info('Output directory %s already exists (from a previous run?), removing it so we can recreate it', outdir) ## INFO
@@ -66,7 +49,7 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 				logging.error('Output directory %s already exists (from a previous run?), will not overwrite!', outdir) ## ERROR
 				sys.exit(1)
 		
-		## Create output directory
+		## Create output directory (after removing existing if present)
 		os.mkdir(outdir)
 		
 		## Open results file
@@ -75,7 +58,7 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 		## Extract frame from a specific timestamp in a video.
 		capture_frame(video, frame_prefix, times)
 		
-		## Extract tests from frames
+		## Crop tests from each time frame
 		for time in times:
 			frame_in = frame_prefix+"."+str(time)+"sec.png"
 			frame_out = frame_prefix+"."+str(time)+"sec.detect"
@@ -84,14 +67,18 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 			logging.info('Searching for tests in time %s seconds image', time) ## INFO
 			logging.debug('In frame: %s', frame_in) ## DEBUG
 			logging.debug('Out prefix: %s', frame_out) ## DEBUG
+			
 			detect_test_strip(frame_in, frame_out, intervals)
 		
+		## Generate a score for each test crop from the specificed time frame.
 		for name, time, xmin, xmax, ymin, ymax in intervals:
 			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", name+".png")
 			logging.debug('Searching for %s test in %s', name, target_frame) ## DEBUG
+			
 			score = extract_colors(target_frame)
-			results.write(name+'\t'+str(score)+'\n')
 			logging.debug('Score: %s', score) ## DEBUG
+			
+			results.write(name+'\t'+str(score)+'\n')
 		
 		## Close results file
 		results.close()
@@ -114,11 +101,11 @@ def process_videos(videos, model_detector, model_names, intervals, cleanup, outd
 			logging.info('Cleaning up - removing %s', outdir) ## INFO
 			shutil.rmtree(outdir)
 		
-		logging.info('########################################################') ## INFO
 		logging.info('## Finished. Results in %s', results_file) ## INFO
-		logging.info('########################################################') ## INFO
 	
+	logging.info('########################################################') ## INFO
 	logging.info('Finished processing video files') ## INFO
+	logging.info('########################################################') ## INFO
 
 
 
@@ -175,22 +162,6 @@ def video_rotation(video):
 	else:
 		logging.warning('Video has a weird rotation (i.e., not 0, 90, 180, or 270) of %s!', rotation)
 	return video
-
-
-
-# Extract mean value of RGB channels combined for a given image
-# 
-# Parameters:
-#	image_filename	image file to get average RGB value for
-def extract_colors(image_filename):
-	pic = imageio.imread(image_filename)
-	R = pic[ :, :, 0]
-	G = pic[ :, :, 1]
-	B = pic[ :, :, 2]
-	meanR = np.mean(R)
-	meanG = np.mean(G)
-	meanB = np.mean(B)
-	return ((meanR+meanG+meanB)/3)
 
 
 

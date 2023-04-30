@@ -1,4 +1,4 @@
-name: TestStripDX-cpu
+name: TestStripDX
 
 channels:
 - anaconda
@@ -12,9 +12,5 @@ dependencies:
   - pip:
     - opencv-python==4.1.1.26
     - lxml
-    - tqdm
-    - tensorflow
-    - absl-py
     - easydict
     - pillow
-    - pytesseract
