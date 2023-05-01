@@ -9,7 +9,7 @@ ARG USERID=1000
 
 # Instal basic utilities
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git wget unzip bzip2 sudo build-essential ca-certificates openssh-client libsm6 libxrender1 libfontconfig1 libxext6 libxrender-dev && \
+    apt-get install -y --no-install-recommends git wget unzip bzip2 sudo build-essential ca-certificates openssh-client libsm6 libxrender1 libfontconfig1 libxext6 libxrender-dev libgl1-mesa-glx && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -37,21 +37,21 @@ RUN mkdir -p  /home/$USERNAME/.ssh/ && \
     echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> /home/$USERNAME/.ssh/config
 
 # Download and install TestStripDX
-#RUN git clone https://github.com/dbsymbiosis/TestStripDX.git
-COPY --chown="$USERNAME:users" TestStripDX /home/$USERNAME/TestStripDX
-
+RUN cd /home/$USERNAME/ && \
+    git clone https://github.com/dbsymbiosis/TestStripDX.git && \
+    chown -R "$USERNAME:users" TestStripDX && \
+    cd TestStripDX/ && \
+    git checkout dev-StaticCoords
+ENV PATH $PWD:$PATH
 WORKDIR /home/$USERNAME/TestStripDX
 
 #RUN git checkout dev
-RUN mamba env update --file conda-cpu.yml && \
+RUN mamba env update --file conda.yml && \
     conda clean -tipy
 
 # For interactive shell
 RUN conda init bash && \
-    echo "conda activate yolov4-cpu" >> /home/$USERNAME/.bashrc
+    echo "conda activate TestStripDX" >> /home/$USERNAME/.bashrc
 
-# Compile model
-RUN conda run -n yolov4-cpu ./TestStripDX.py convert -m URS10
-
-ENTRYPOINT [ "conda", "run", "-n", "yolov4-cpu" ]
+ENTRYPOINT [ "conda", "run", "-n", "TestStripDX", "/home/docker/TestStripDX/TestStripDX.py" ]
 

@@ -33,7 +33,7 @@ for each test on the trip that we are interested in.
 parser_process_video = subparsers.add_parser('process', 
 	help='Process test strip video files',
 	description=PROCESS_VIDEOS_DESCRIPTION)
-parser_process_video.add_argument('-v', '--videos', metavar='teststrip.mp4', 
+parser_process_video.add_argument('-i', '--in_videos', metavar='teststrip.mp4', 
 	required=True, nargs='+', type=str, 
 	help='Video files to process'
 )
@@ -69,11 +69,11 @@ parser_combine_results = subparsers.add_parser('combine',
 	help='Combine results from processed video files', 
 	description=COMBINE_RESULTS_DESCRIPTION
 )
-parser_combine_results.add_argument('-t', '--test_results', metavar='test_results.txt',
+parser_combine_results.add_argument('-i', '--in_results', metavar='test_results.txt',
 	required=True, nargs='+', type=argparse.FileType('r'),
 	help='Input test strip results files (required)'
 )
-parser_combine_results.add_argument('-o', '--out', metavar='output.txt',
+parser_combine_results.add_argument('-o', '--out_combined', metavar='combined.txt',
 	required=False, default=sys.stdout, type=argparse.FileType('w'),
 	help='Output file (default: stdout)'
 )
@@ -106,11 +106,11 @@ parser_joinPDFs = subparsers.add_parser('joinPDFs',
 	description=JOINPDFS_DESCRIPTION,
 	formatter_class=RawTextHelpFormatter
 )
-parser_joinPDFs.add_argument('-i', '--infiles', nargs='+', metavar="file.pdf",
+parser_joinPDFs.add_argument('-i', '--in_pdfs', nargs='+', metavar="file.pdf",
 	required=False, default=sys.stdin, type=str,
 	help='Input pdf files (default: stdin)'
 )
-parser_joinPDFs.add_argument('-o', '--out', metavar='merged.pdf',
+parser_joinPDFs.add_argument('-o', '--out_pdf', metavar='combined.pdf',
 	required=True, type=str,
 	help='Output merged pdf file.'
 )

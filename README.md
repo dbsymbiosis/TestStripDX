@@ -20,14 +20,14 @@ conda activate TestStripDX
 
 Crop and save target areas as new images
 ```bash
-./TestStripDX.py process -v video1.mp4 video2.mp4 video3.mp4 .. ..
+./TestStripDX.py process -i video1.mp4 video2.mp4 video3.mp4 .. ..
 ```
 
 A number of output files (and a directory with temp files) for each input video file will be created by this command and will have the suffix `*.TestStripDX`
 
 Combine the `*.results.txt` files produced by the previous command together into a single file.
 ```bash
-./TestStripDX.py combine -t video2.mp4.TestStripDX.results.txt video3.mp4.TestStripDX.results.txt -o combined_results.txt
+./TestStripDX.py combine -o combined_results.txt -i video2.mp4.TestStripDX.results.txt video3.mp4.TestStripDX.results.txt
 ```
 
 For each of your input videos there should also be a PDF file created called `*.TestStripDX.detection.pdf`. This document is simply a combination/concatenation of the images extracted from the video that was processed, and that were used to derive the intensity values. Its main use is to allow easy double checking of the computer vision component of the workflow (i.e., to double check that the correct tests were identified by the vision system at the correct time points).
