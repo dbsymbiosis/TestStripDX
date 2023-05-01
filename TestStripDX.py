@@ -171,13 +171,13 @@ if args.command != 'joinPDFs':
 #	      so we need to only run import when we need to
 if args.command == 'process':
 	from src.video import *
-	process_videos(args.videos, model_targets, args.cleanup, args.suffix)
+	process_videos(args.in_videos, model_targets, args.cleanup, args.suffix)
 elif args.command == 'combine':
 	from src.merge import *
-	combine_results(args.test_results, args.out, model_targets)
+	combine_results(args.in_results, args.out_combined, model_targets)
 elif args.command == 'joinPDFs':
 	from src.merge import *
-	joinPDFs(args.infiles, args.out)
+	joinPDFs(args.in_pdfs, args.out_pdf)
 
 
 
