@@ -7,6 +7,9 @@ import moviepy.editor as mpy
 from PIL import Image, ImageDraw
 from src.image import *
 
+# To catch warnings from videos that are too short
+import warnings
+warnings.filterwarnings('error')
 
 
 # Process test strip video files
@@ -136,24 +139,33 @@ def capture_frame(video_filename, out_prefix, seconds):
 	
 	# Check that seconds argument does not excede total video duration
 	logging.debug('Video duration: %s seconds', vid.duration) ## DEBUG
-	if seconds[-1] > vid.duration:
-		logging.error('The length (%s seconds) is shorter then the number of seconds that we want a frame from (%s seconds)!', vid.duration, seconds[-1])
-		exit(1)
 	
 	# Extract first frame with timestamp higher then what is requested. 
 	logging.debug('Video rotation: %s', vid.rotation) ## DEBUG
 	vid = video_rotation(vid)
-	for i, (tstamp, frame) in enumerate(vid.iter_frames(with_times=True)):
-		if tstamp > seconds[0]:
-			logging.info('Found frame for %s seconds: frame_count:%s; timestamp:%s', seconds[0], i, tstamp) ## DEBUG
-			img = Image.fromarray(frame, 'RGB')
-			frame_filename = out_prefix + '.' + str(seconds[0]) + 'sec.png'
+	last_valid_frame = []
+	try:
+		for i, (tstamp, frame) in enumerate(vid.iter_frames(with_times=True)):
+			if tstamp > seconds[0]:
+				logging.info('Found frame for %s seconds: frame_count:%s; timestamp:%s', seconds[0], i, tstamp) ## DEBUG
+				img = Image.fromarray(frame, 'RGB')
+				frame_filename = out_prefix + '.' + str(seconds[0]) + 'sec.png'
+				img.save(frame_filename)
+				seconds = seconds[1:] # Remove first element from list as we just found a frame for this timepoint
+			
+			# Break loop if we have run out of timepoints that we want.
+			if len(seconds) == 0:
+				logging.info("Done extracting frames from video")
+				break
+			
+			# Save last valid frame incase we run out of video of the last times
+			last_valid_frame = frame
+	except Warning:
+		logging.warning('Video is too short! Taking the last valid frame for times: %s', seconds) ## WARNING
+		for time in seconds:
+			img = Image.fromarray(last_valid_frame, 'RGB')
+			frame_filename = out_prefix + '.' + str(time) + 'sec.png'
 			img.save(frame_filename)
-			seconds = seconds[1:] # Remove first element from list as we just found a frame for this timepoint
-		# Break loop if we have run out of timepoints that we want.
-		if len(seconds) == 0:
-			logging.info("Done extracting frames from video")
-			break
 
 
 
