@@ -9,25 +9,34 @@ from src.image import *
 
 # To catch warnings from videos that are too short
 import warnings
-warnings.filterwarnings('error')
+#warnings.filterwarnings('error')
 
 
 # Process test strip video files
 #
 # Parameters:
 #	videos			input video files
-#	intervals		time intervals to collect frames from videos
+#	model_detector_path 	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
+#	model_names_path	path to names file (e.g., 'models/teststrips.names')
+#	model_names		names of model objects
+#	model_intervals		test intervals/coords
+#	landmark_name		name of landmark to use for orientation
+#	landmark_bounds		bounding coords of landmark
 #	cleanup			cleanup temp files once finished processing video
 #	outdir_suffix		suffix to add to output results files
 #	outdir_overwrite	overwrite output director directory (default: True)
-def process_videos(videos, intervals, cleanup, outdir_suffix, outdir_overwrite=True):
+def process_videos(videos, 
+		model_detector_path, model_names_path,
+		model_names, model_intervals,
+		landmark_name, landmark_bounds,
+		cleanup, outdir_suffix, outdir_overwrite=True):
 	logging.info('####') ## INFO
 	logging.info('#### Processing video files') ## INFO
 	logging.info('####') ## INFO
 	
 	## Times to extract from video - make unique and sort.
 	# Add time 0 to list to use as blank
-	times = [0] + sorted(set([x[1] for x in intervals]))
+	times = [0] + sorted(set([x[1] for x in model_intervals]))
 	
 	for video in videos:
 		logging.info('# Extracting frames from %s', video) ## INFO
@@ -69,11 +78,13 @@ def process_videos(videos, intervals, cleanup, outdir_suffix, outdir_overwrite=T
 			logging.debug('In frame: %s', frame_in) ## DEBUG
 			logging.debug('Out prefix: %s', frame_out) ## DEBUG
 			
-			crop_test_strip(frame_in, frame_out, intervals)
+			crop_test_strip(frame_in, frame_out,
+					model_detector_path, model_names_path, model_names, model_intervals,
+					landmark_name, landmark_bounds)
 		
 		## Extract "blank" time 0 values for each test
 		blank_values = {}
-		for name, time, xmin, xmax, ymin, ymax in intervals:
+		for name, time, xmin, xmax, ymin, ymax in model_intervals:
 			target_frame = os.path.join(frame_prefix+"."+str(0)+"sec.detect.crop", name+".png")
 			logging.debug('Searching for %s test in %s', name, target_frame) ## DEBUG
 			
@@ -86,7 +97,7 @@ def process_videos(videos, intervals, cleanup, outdir_suffix, outdir_overwrite=T
 		results = open(results_file, 'w')
 		
 		## Generate a score for each test crop from the specificed time frame.
-		for name, time, xmin, xmax, ymin, ymax in intervals:
+		for name, time, xmin, xmax, ymin, ymax in model_intervals:
 			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", name+".png")
 			logging.debug('Searching for %s test in %s', name, target_frame) ## DEBUG
 			
@@ -144,6 +155,8 @@ def capture_frame(video_filename, out_prefix, seconds):
 	logging.debug('Video rotation: %s', vid.rotation) ## DEBUG
 	vid = video_rotation(vid)
 	last_valid_frame = []
+	
+	warnings.filterwarnings('error')
 	try:
 		for i, (tstamp, frame) in enumerate(vid.iter_frames(with_times=True)):
 			if tstamp > seconds[0]:
@@ -166,6 +179,7 @@ def capture_frame(video_filename, out_prefix, seconds):
 			img = Image.fromarray(last_valid_frame, 'RGB')
 			frame_filename = out_prefix + '.' + str(time) + 'sec.png'
 			img.save(frame_filename)
+	warnings.filterwarnings('ignore')
 
 
 

@@ -6,6 +6,8 @@ from argparse import RawTextHelpFormatter
 import logging
 
 ALLOWED_MODELS= ['URS10']
+ML_LANDMARKS = {"URS10":"Glucose"}
+ML_LANDMARKS_BOUNDS = {"URS10":{"xmin":400, "xmax":600, "ymin":10, "ymax":200}}
 
 
 ##
@@ -20,6 +22,26 @@ An image processing framework for processing and extracting test strip results f
 '''
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=DESCRIPTION)
 subparsers = parser.add_subparsers(dest='command', required=True)
+
+##
+## Parser for the conversion of the yolov4 to Tensorflow detector
+##
+CONVERT_DETECTOR_DESCRIPTION = '''
+Convert yolov4 detector to Tensorflow detector
+Needs models/model_name.weights and models/model_name.names to exist.
+'''
+parser_convert_detector = subparsers.add_parser('convert', 
+	help='Convert yolov4 detector to Tensorflow detector',
+	description=CONVERT_DETECTOR_DESCRIPTION
+)
+parser_convert_detector.add_argument('-m', '--model', metavar='model_name',
+	required=False, type=str, default='URS10', choices=ALLOWED_MODELS,
+	help='Name of test strip being run (default: %(default)s; choices: [%(choices)s])'
+)
+parser_convert_detector.add_argument('--debug',
+	required=False, action='store_true',
+	help='Print DEBUG info (default: %(default)s)'
+)
 
 ##
 ## Parser for the processing of the test strip video files
@@ -125,7 +147,6 @@ parser_joinPDFs.add_argument('--debug',
 args = parser.parse_args()
 
 
-
 ## Set up basic debugger
 logFormat = "[%(levelname)s]: %(message)s"
 logging.basicConfig(format=logFormat, stream=sys.stderr, level=logging.INFO)
@@ -142,36 +163,76 @@ logging.info('########################################################') ## INFO
 ## Model variables
 if args.command != 'joinPDFs':
 	script_dir = os.path.abspath(os.path.dirname(__file__))
-	models_dir       = 'models'
-	model_intervals  = os.path.join(script_dir, models_dir, args.model)
+	models_dir            = 'models'
+	model_weights_path    = os.path.join(script_dir, models_dir, args.model+'.weights')
+	model_names_path      = os.path.join(script_dir, models_dir, args.model+'.names')
+	model_intervals_path  = os.path.join(script_dir, models_dir, args.model+'.coords')
+	model_detector_path   = os.path.join(script_dir, models_dir, args.model+'.detector')
 	
 	## Load targets info
-	logging.info('Opening file %s with list of target tests', model_intervals) ## INFO
-	if not os.path.exists(model_intervals):
-		logging.error('Targets file (%s) does not exist!', model_intervals) ## ERROR
+	logging.info('Checking model files (%s/%s.*) exist', models_dir, args.model) ## INFO
+	if not os.path.exists(model_weights_path):
+		logging.error('Targets file (%s) does not exist!', model_weights_path) ## ERROR
 		sys.exit(1)
+	if not os.path.exists(model_names_path):
+		logging.error('Targets file (%s) does not exist!', model_names_path) ## ERROR
+		sys.exit(1)
+	if not os.path.exists(model_intervals_path):
+		logging.error('Targets file (%s) does not exist!', model_intervals_path) ## ERROR
+		sys.exit(1)
+	if args.command != 'convert':
+		if not os.path.exists(model_detector_path):
+			logging.error('Targets file (%s) does not exist!', model_detector_path) ## ERROR
+			sys.exit(1)
 	
 	## Open targets file and convert to [[str, int, float, float, float, float], [str, int, float, float, float, float], ...]
-	model_targets = list()
-	with open(model_intervals, 'r') as fh:
+	logging.info('Opening file %s with list of test coods', model_intervals_path) ## INFO
+	model_intervals = list()
+	box_x = 40
+	box_y = 40
+	with open(model_intervals_path, 'r') as fh:
 		for line in fh:
 			line = line.strip()
 			# Ignore empty or commented out characters
 			if line.startswith('#') or not line:
 				continue
 			
-			name, time, xmin, xmax, ymin, ymax = line.split('\t')
-			model_targets.append([name, int(time), float(xmin), float(xmax), float(ymin), float(ymax)])
-	logging.debug('model_targets: %s', model_targets) ## DEBUG
+			name, time, xmin, ymin = line.split('\t')
+			model_intervals.append([name, int(time),
+						float(xmin), float(xmin) + box_x,
+						float(ymin), float(ymin) + box_y
+						])
+	logging.debug('model_intervals: %s', model_intervals) ## DEBUG
+	
+	## Open landmark name list file and convert to [str, str, ...]
+	logging.info('Opening file %s with list of landmark objects to use for image orientation', model_names_path) ## INFO
+	model_names = list()
+	with open(model_names_path, 'r') as fh:
+		for line in fh:
+			line = line.strip()
+			# Ignore empty or commented out characters
+			if line.startswith('#') or not line:
+				continue
+			
+			name = line.split('\t')[0]
+			model_names.append(name)
+	logging.debug('model_names: %s', model_names) ## DEBUG
 
 
 
 ## Run subcommand
 #	NOTE: Import each set of functions as needed becuase many of the packages take >30 sec to import
 #	      so we need to only run import when we need to
-if args.command == 'process':
-	from src.video import *
-	process_videos(args.in_videos, model_targets, args.cleanup, args.suffix)
+if args.command == 'convert':
+	from src.detector import *
+	convert_detector(model_weights, model_names, model_detector)
+elif args.command == 'process':
+	from src.video import *	
+	process_videos(args.in_videos,
+			model_detector_path, model_names_path,
+			model_names, model_intervals,
+			ML_LANDMARKS["URS10"], ML_LANDMARKS_BOUNDS["URS10"],
+			args.cleanup, args.suffix)
 elif args.command == 'combine':
 	from src.merge import *
 	combine_results(args.in_results, args.out_combined, model_targets)

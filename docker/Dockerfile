@@ -51,7 +51,13 @@ RUN mamba env update --file conda.yml && \
 
 # For interactive shell
 RUN conda init bash && \
-    echo "conda activate TestStripDX" >> /home/$USERNAME/.bashrc
+    echo "conda activate TestStripDX" >> /home/$USERNAME/.bashrc && \
+    echo 'export PATH=/home/$USER/TestStripDX:$PATH' >> /home/$USERNAME/.bashrc
 
-ENTRYPOINT [ "conda", "run", "-n", "TestStripDX", "/home/docker/TestStripDX/TestStripDX.py" ]
+# Compile model (copy files first)
+COPY --chown="$USERNAME:users" ../models/* /home/$USERNAME/TestStripDX/models/
+RUN conda run -n TestStripDX ./TestStripDX.py convert
+
+# /home/docker/TestStripDX/TestStripDX.py
+ENTRYPOINT [ "conda", "run", "-n", "TestStripDX", "TestStripDX.py" ]
 
