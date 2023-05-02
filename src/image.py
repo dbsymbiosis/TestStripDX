@@ -62,7 +62,9 @@ def crop_test_strip(image_path, output_path,
 	   l_xmin > landmark_bounds["xmax"] or \
 	   l_ymin < landmark_bounds["ymin"] or \
 	   l_ymin > landmark_bounds["ymax"]:
-		logging.warning('Landmark ML (%s) was outside the expected bounds. This might mean that ', landmark_name) # WARNING
+		logging.warning('Landmark ML (%s: xmin:%s, xmax:%s, ymin:%s, ymax:%s) was outside the expected bounds (xmin:%s, xmax:%s, ymin:%s, ymax:%s). This might mean that the video has an unexpected rotation or that the strip might not be correctly positioned in the holder.', 
+			landmark_name, l_xmin, l_xmax, l_ymin, l_ymax,
+			xmin, xmax, ymin, ymax) # WARNING
 	
 	# hold all detection data in one variable
 	bboxes = np.array([  [
@@ -75,7 +77,7 @@ def crop_test_strip(image_path, output_path,
 	names = np.array([name for name, time, xmin, xmax, ymin, ymax in model_intervals], dtype=str)
 	num_objects = len(names)
 	pred_bbox = {"bboxes":bboxes, "names":names, "times":times, "num_objects":num_objects}
-	logging.info('pred_bbox: %s', pred_bbox) ## DEBUG
+	logging.debug('pred_bbox: %s', pred_bbox) ## DEBUG
 	
 	# crop each detection and save it as new image
 	crop_path = os.path.join(output_path + '.crop')#, image_name)
