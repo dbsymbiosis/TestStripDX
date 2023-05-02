@@ -1,6 +1,6 @@
 
 
-TAG="dev-StaticCoords_v0.0.2"
+TAG="dev-StaticCoords_v0.0.3"
 
 USER="timothystephens"
 PROG="teststripdx"
@@ -9,7 +9,9 @@ PROG="teststripdx"
 
 ## Build docker file from instructions
 #  use '--no-cache' to ensure the github repo is always re-downloaded when building
+cp -r ../models .
 docker build --no-cache -t $PROG:$TAG . 2>&1 | tee build.log
+rm -r models
 
 
 

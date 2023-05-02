@@ -55,7 +55,7 @@ RUN conda init bash && \
     echo 'export PATH=/home/$USER/TestStripDX:$PATH' >> /home/$USERNAME/.bashrc
 
 # Compile model (copy files first)
-COPY --chown="$USERNAME:users" ../models/* /home/$USERNAME/TestStripDX/models/
+COPY --chown="$USERNAME:users" models/* /home/$USERNAME/TestStripDX/models/
 RUN conda run -n TestStripDX ./TestStripDX.py convert
 
 # /home/docker/TestStripDX/TestStripDX.py

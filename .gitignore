@@ -1,4 +1,5 @@
 *.sif
+docker/build.log
 models/*
 test/*
 __pycache__

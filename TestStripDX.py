@@ -7,7 +7,7 @@ import logging
 
 ALLOWED_MODELS= ['URS10']
 ML_LANDMARKS = {"URS10":"Glucose"}
-ML_LANDMARKS_BOUNDS = {"URS10":{"xmin":400, "xmax":600, "ymin":10, "ymax":200}}
+ML_LANDMARKS_BOUNDS = {"URS10":{"xmin":400, "xmax":600, "ymin":5, "ymax":200}}
 
 
 ##
