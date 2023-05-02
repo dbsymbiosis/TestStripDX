@@ -225,7 +225,7 @@ if args.command != 'joinPDFs':
 #	      so we need to only run import when we need to
 if args.command == 'convert':
 	from src.detector import *
-	convert_detector(model_weights, model_names, model_detector)
+	convert_detector(model_weights_path, model_names_path, model_detector_path)
 elif args.command == 'process':
 	from src.video import *	
 	process_videos(args.in_videos,

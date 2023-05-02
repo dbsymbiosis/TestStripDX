@@ -64,7 +64,7 @@ def crop_test_strip(image_path, output_path,
 	   l_ymin > landmark_bounds["ymax"]:
 		logging.warning('Landmark ML (%s: xmin:%s, xmax:%s, ymin:%s, ymax:%s) was outside the expected bounds (xmin:%s, xmax:%s, ymin:%s, ymax:%s). This might mean that the video has an unexpected rotation or that the strip might not be correctly positioned in the holder.', 
 			landmark_name, l_xmin, l_xmax, l_ymin, l_ymax,
-			xmin, xmax, ymin, ymax) # WARNING
+			landmark_bounds["xmin"], landmark_bounds["xmax"], landmark_bounds["ymin"], landmark_bounds["ymax"]) # WARNING
 	
 	# hold all detection data in one variable
 	bboxes = np.array([  [
