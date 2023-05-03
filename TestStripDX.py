@@ -235,7 +235,7 @@ elif args.command == 'process':
 			args.cleanup, args.suffix)
 elif args.command == 'combine':
 	from src.merge import *
-	combine_results(args.in_results, args.out_combined, model_targets)
+	combine_results(args.in_results, args.out_combined, model_intervals)
 elif args.command == 'joinPDFs':
 	from src.merge import *
 	joinPDFs(args.in_pdfs, args.out_pdf)

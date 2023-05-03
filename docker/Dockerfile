@@ -49,15 +49,14 @@ WORKDIR /home/$USERNAME/TestStripDX
 RUN mamba env update --file conda.yml && \
     conda clean -tipy
 
-# For interactive shell
-RUN conda init bash && \
-    echo "conda activate TestStripDX" >> /home/$USERNAME/.bashrc && \
-    echo 'export PATH=/home/$USER/TestStripDX:$PATH' >> /home/$USERNAME/.bashrc
+# Initialize conda
+RUN conda init bash 
 
 # Compile model (copy files first)
 COPY --chown="$USERNAME:users" models/* /home/$USERNAME/TestStripDX/models/
 RUN conda run -n TestStripDX ./TestStripDX.py convert
 
-# /home/docker/TestStripDX/TestStripDX.py
-ENTRYPOINT [ "conda", "run", "-n", "TestStripDX", "TestStripDX.py" ]
+# Command that is run when we execute the image. 
+#   - Any arguments passed to docker are added to the end of this command.
+ENTRYPOINT ["conda", "run", "-n", "TestStripDX", "/home/docker/TestStripDX/TestStripDX.py"]
 
