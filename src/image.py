@@ -112,7 +112,7 @@ def extract_colors(image_filename):
 	meanR = np.mean(R)
 	meanG = np.mean(G)
 	meanB = np.mean(B)
-	return ((meanR+meanG+meanB)/3)
+	return ({'R':meanR, 'G':meanG, 'B':meanB})
 
 
 

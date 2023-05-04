@@ -18,7 +18,11 @@ def combine_results(test_files, outfile, intervals):
 	logging.info('Combining results files') ## INFO
 	
 	## Extract names and times to extract from video.
-	names = [x[0] for x in intervals]
+	names = []
+	for x in intervals:
+		names.append(x[0]+'_R')
+		names.append(x[0]+'_G')
+		names.append(x[0]+'_B')
 	
 	## Header
 	t = 'Files'

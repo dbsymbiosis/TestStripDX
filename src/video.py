@@ -82,32 +82,38 @@ def process_videos(videos,
 					model_detector_path, model_names_path, model_names, model_intervals,
 					landmark_name, landmark_bounds)
 		
-		## Extract "blank" time 0 values for each test
+		## Extract "blank" time 0 RGB values for each test
 		blank_values = {}
 		for name, time, xmin, xmax, ymin, ymax in model_intervals:
 			target_frame = os.path.join(frame_prefix+"."+str(0)+"sec.detect.crop", name+".png")
 			logging.debug('Searching for %s test in %s', name, target_frame) ## DEBUG
 			
-			score = extract_colors(target_frame)
-			logging.debug('Score: %s', score) ## DEBUG
+			RGB = extract_colors(target_frame)
+			logging.debug('RGB: %s', RGB) ## DEBUG
 			
-			blank_values[name] = score
+			blank_values[name] = RGB
 		
 		## Open results file
 		results = open(results_file, 'w')
 		
-		## Generate a score for each test crop from the specificed time frame.
+		## Generate RGB for each test crop from the specificed time frame.
 		for name, time, xmin, xmax, ymin, ymax in model_intervals:
 			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", name+".png")
 			logging.debug('Searching for %s test in %s', name, target_frame) ## DEBUG
 			
-			score = extract_colors(target_frame)
-			logging.debug('Score: %s', score) ## DEBUG
+			RGB = extract_colors(target_frame)
+			logging.debug('RGB: %s', RGB) ## DEBUG
 			
-			adj_score = blank_values[name] - score
-			logging.debug('Score: %s', adj_score) ## DEBUG
+			blank_RGB = blank_values[name]
+			adj_RGB = {}
+			adj_RGB['R'] = blank_RGB['R'] - RGB['R']
+			adj_RGB['G'] = blank_RGB['G'] - RGB['G']
+			adj_RGB['B'] = blank_RGB['B'] - RGB['B']
+			logging.debug('RGB: %s', adj_RGB) ## DEBUG
 			
-			results.write(name+'\t'+str(adj_score)+'\n')
+			results.write(name+'_R\t'+str(adj_RGB['R'])+'\n')
+			results.write(name+'_G\t'+str(adj_RGB['G'])+'\n')
+			results.write(name+'_B\t'+str(adj_RGB['B'])+'\n')
 		
 		## Close results file
 		results.close()

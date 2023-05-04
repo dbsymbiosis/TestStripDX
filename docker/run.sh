@@ -1,6 +1,6 @@
 
 
-TAG="dev-StaticCoords_v0.0.5"
+TAG="dev-StaticCoords_v0.0.7"
 
 USER="timothystephens"
 PROG="teststripdx"
