@@ -20,7 +20,7 @@ docker run --workdir=$PWD $PROG:${TAG} -h
 
 
 
-## Build docker image and push ro repo
+## Build docker image and push to repo
 BUILD=$(awk '$1=="Successfully" && $2=="built" {print $3}' build.log)
 echo "BUILD=${BUILD}"
 
@@ -59,6 +59,7 @@ docker run --workdir=$PWD ${IMG} joinPDFs -i vid*.detection.pdf -o combined.dete
 ## Cleanup docker, singularity, and test data
 docker image prune -af
 docker image rm -f $(docker image ls | awk 'NR>1{print $3}')
+singularity cache clean
 rm -fr *.sif
 rm -fr ../test/*TestStripDX* ../test/combined.*
 

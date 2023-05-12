@@ -20,6 +20,7 @@ def combine_results(test_files, outfile, intervals):
 	## Extract names and times to extract from video.
 	names = []
 	for x in intervals:
+		names.append(x[0]+'_score')
 		names.append(x[0]+'_R')
 		names.append(x[0]+'_G')
 		names.append(x[0]+'_B')
@@ -27,7 +28,7 @@ def combine_results(test_files, outfile, intervals):
 	## Header
 	t = 'Files'
 	for name in names:
-		t = t + '\t' + name + '_intensity'
+		t = t + '\t' + name
 	outfile.write(t + '\n')
 
 	## Test strips

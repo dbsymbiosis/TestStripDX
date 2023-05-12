@@ -21,11 +21,10 @@ from src.detector import detect_test_strip
 #       model_names_path 	path to names file (e.g., 'models/teststrips.names')
 #	model_intervals	 	test intervals/coords
 #	model_names	 	names of model objects
-#	landmark_name		name of landmark to use for orientation
-#	landmark_bounds		bounding coords of landmark
+#	model_landmark_bounds	bounding coords of landmark
 def crop_test_strip(image_path, output_path,
 		model_detector_path, model_names_path, model_names, model_intervals,
-		landmark_name, landmark_bounds):
+		model_landmark_bounds):
 	logging.info('Start cropping tests from frame: %s', image_path) ## INFO
 	
 	# Import and format image
@@ -36,35 +35,14 @@ def crop_test_strip(image_path, output_path,
 	logging.info(' - Using ML to search for landmark objects') ## INFO
 	logging.debug('In frame: %s', image_path) ## DEBUG
 	logging.debug('Out prefix: %s', output_path) ## DEBUG
-	ML_pred_bbox = detect_test_strip(model_detector_path, model_names_path, model_names, original_image)
-	
-	# draw colored boxes on image for ML detections (used for debugging)
-	ML_image = draw_bbox(original_image, ML_pred_bbox)
-	ML_image = Image.fromarray(ML_image.astype(np.uint8))
-	ML_image = cv2.cvtColor(np.array(ML_image), cv2.COLOR_BGR2RGB)
-	cv2.imwrite(output_path + '.ML_detection.png', ML_image)
-	
 	# Check if we found the landmark in the image and extract it coordinates
-	ML_bboxes   = ML_pred_bbox["bboxes"]
-	ML_names       = ML_pred_bbox["names"]
-	ML_num_objects = ML_pred_bbox["num_objects"]
-	l_xmin, l_ymin, l_xmax, l_ymax = 460, 100, 530, 140
-	for i in range(ML_num_objects):
-		if ML_names[i] == landmark_name:
-			logging.info('Landmark found') ## INFO
-			l_xmin, l_ymin, l_xmax, l_ymax = ML_bboxes[i]
-			break
-	else:
-		logging.error('Failed to find landmark in frame. Falling back to default coords, these are a rought approximation but will likely be wrong. Please double check these results.') ## ERROR
-	
-	# Check if landmark is where we expect - raise warning if it isnt.
-	if l_xmin < landmark_bounds["xmin"] or \
-	   l_xmin > landmark_bounds["xmax"] or \
-	   l_ymin < landmark_bounds["ymin"] or \
-	   l_ymin > landmark_bounds["ymax"]:
-		logging.warning('Landmark ML (%s: xmin:%s, xmax:%s, ymin:%s, ymax:%s) was outside the expected bounds (xmin:%s, xmax:%s, ymin:%s, ymax:%s). This might mean that the video has an unexpected rotation or that the strip might not be correctly positioned in the holder.', 
-			landmark_name, l_xmin, l_xmax, l_ymin, l_ymax,
-			landmark_bounds["xmin"], landmark_bounds["xmax"], landmark_bounds["ymin"], landmark_bounds["ymax"]) # WARNING
+	landmark_found, l_xmin, l_ymin, l_xmax, l_ymax = check_landmark(original_image, 
+							model_detector_path, model_names_path, model_names, model_landmark_bounds,
+							output_path)
+	if not landmark_found:
+		logging.warning('Landmark ML (%s: xmin:%s, xmax:%s, ymin:%s, ymax:%s) was outside the expected bounds (xmin:%s, xmax:%s, ymin:%s, ymax:%s). This might mean that the video has an unexpected rotation or that the strip might not be correctly positioned in the holder.',
+			model_landmark_bounds["name"], l_xmin, l_xmax, l_ymin, l_ymax,
+			model_landmark_bounds["xmin"], model_landmark_bounds["xmax"], model_landmark_bounds["ymin"], model_landmark_bounds["ymax"]) # WARNING
 	
 	# hold all detection data in one variable
 	bboxes = np.array([  [
@@ -79,6 +57,14 @@ def crop_test_strip(image_path, output_path,
 	pred_bbox = {"bboxes":bboxes, "names":names, "times":times, "num_objects":num_objects}
 	logging.debug('pred_bbox: %s', pred_bbox) ## DEBUG
 	
+	# draw colored boxes on image
+	logging.info(' - Drawing crops for manual verification') ## INFO
+	image = draw_bbox(original_image, pred_bbox)
+	
+	image = Image.fromarray(image.astype(np.uint8))
+	image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
+	cv2.imwrite(output_path + '.detection.png', image)
+	
 	# crop each detection and save it as new image
 	crop_path = os.path.join(output_path + '.crop')#, image_name)
 	try:
@@ -88,17 +74,62 @@ def crop_test_strip(image_path, output_path,
 	logging.info(' - Cropping images using (landmark) adjusted coords') ## INFO
 	crop_objects(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), pred_bbox, crop_path)
 	
-	# draw colored boxes on image
-	logging.info(' - Drawing crops for manual verification') ## INFO
-	image = draw_bbox(original_image, pred_bbox)
-	
-	image = Image.fromarray(image.astype(np.uint8))
-	image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
-	cv2.imwrite(output_path + '.detection.png', image)
-	
 	logging.info('Done cropping tests from frame') ## INFO
 
 
+# Check for landmark in frame. Return True if it is in the correct position (i.e., frame is correctly orientated).
+#
+# Parameters:
+#	frame			frame to check
+#	model_detector_path	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
+#	model_names_path	path to names file (e.g., 'models/teststrips.names')
+#	model_names		names of model objects
+#	model_landmark_bounds	dict of landmark features to check for in image
+#	output_path		render ML pred to image. Useful for debugging (if None, dont render)
+#
+# Returns:
+#	found_landmark 				either True (Landmark was found in correct position) or False (Landmark wasnt found in correct position - or wasnt found at all)
+#	l_xmin, l_ymin, l_xmax, l_ymax		bounds of landmark from ML prediction
+def check_landmark(frame, model_detector_path, model_names_path, model_names, model_landmark_bounds, output_path=None):
+	# Run ML to predict landmark
+	pred_bbox = detect_test_strip(model_detector_path, model_names_path, model_names, frame)
+	bboxes      = pred_bbox["bboxes"]
+	names       = pred_bbox["names"]
+	num_objects = pred_bbox["num_objects"]
+	l_xmin, l_ymin, l_xmax, l_ymax = 460, 100, 530, 140
+	
+	# draw colored boxes on image for ML detections (used for debugging)
+	if output_path is not None:
+		ML_frame = draw_bbox(frame, pred_bbox)
+		ML_frame = Image.fromarray(ML_frame.astype(np.uint8))
+		ML_frame = cv2.cvtColor(np.array(ML_frame), cv2.COLOR_BGR2RGB)
+		cv2.imwrite(output_path + '.ML_detection.png', ML_frame)
+	
+	# Check each of the predicted features and check if they are the one we want.
+	for i in range(num_objects):
+		if names[i] == model_landmark_bounds["name"]:
+			logging.debug('Landmark found') ## DEBUG
+			l_xmin, l_ymin, l_xmax, l_ymax = bboxes[i]
+			break
+	else:
+		logging.debug('Failed to find landmark in frame. Falling back to default coords, these are a rought approximation but will likely be wrong. Please double check these results.') ## DEBUG
+		return(False, l_xmin, l_ymin, l_xmax, l_ymax)
+	
+	# Check if landmark is where we expect - return False if its out of place
+	if l_xmin < model_landmark_bounds["xmin"] or \
+	   l_xmin > model_landmark_bounds["xmax"] or \
+	   l_ymin < model_landmark_bounds["ymin"] or \
+	   l_ymin > model_landmark_bounds["ymax"]:
+		logging.debug('Landmark ML (%s: xmin:%s, xmax:%s, ymin:%s, ymax:%s) was OUT side the expected bounds (xmin:%s, xmax:%s, ymin:%s, ymax:%s).',
+			model_landmark_bounds["name"], l_xmin, l_xmax, l_ymin, l_ymax,
+			model_landmark_bounds["xmin"], model_landmark_bounds["xmax"], model_landmark_bounds["ymin"], model_landmark_bounds["ymax"]) # DEBUG
+		return(False, l_xmin, l_ymin, l_xmax, l_ymax)
+	else:
+		logging.debug('Landmark ML (%s: xmin:%s, xmax:%s, ymin:%s, ymax:%s) was IN side the expected bounds (xmin:%s, xmax:%s, ymin:%s, ymax:%s).',
+			model_landmark_bounds["name"], l_xmin, l_xmax, l_ymin, l_ymax,
+			model_landmark_bounds["xmin"], model_landmark_bounds["xmax"], model_landmark_bounds["ymin"], model_landmark_bounds["ymax"]) # DEBUG
+		return(True, l_xmin, l_ymin, l_xmax, l_ymax)
+	
 
 # Extract mean value of RGB channels combined for a given image
 # 
@@ -112,7 +143,8 @@ def extract_colors(image_filename):
 	meanR = np.mean(R)
 	meanG = np.mean(G)
 	meanB = np.mean(B)
-	return ({'R':meanR, 'G':meanG, 'B':meanB})
+	score = (meanR+meanG+meanB)/3
+	return ({'score':score, 'R':meanR, 'G':meanG, 'B':meanB})
 
 
 
@@ -127,6 +159,7 @@ def crop_objects(img, data, path, crop_offset=0):
 	for i in range(num_objects):
 		# get box coords
 		xmin, ymin, xmax, ymax = bboxes[i]
+		logging.debug('Cropping ojbect no:%s at coords xmin:%s, ymin:%s, xmax:%s, ymax:%s', i, xmin, ymin, xmax, ymax) ## DEBUG
 		
 		# crop detection from image (take an additional x pixels around all edges; default 0)
 		cropped_img = img[int(ymin)-crop_offset:int(ymax)+crop_offset, int(xmin)-crop_offset:int(xmax)+crop_offset]

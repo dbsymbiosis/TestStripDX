@@ -20,15 +20,14 @@ import warnings
 #	model_names_path	path to names file (e.g., 'models/teststrips.names')
 #	model_names		names of model objects
 #	model_intervals		test intervals/coords
-#	landmark_name		name of landmark to use for orientation
-#	landmark_bounds		bounding coords of landmark
+#	model_landmark_bounds	bounding coords of landmark
 #	cleanup			cleanup temp files once finished processing video
 #	outdir_suffix		suffix to add to output results files
 #	outdir_overwrite	overwrite output director directory (default: True)
 def process_videos(videos, 
 		model_detector_path, model_names_path,
 		model_names, model_intervals,
-		landmark_name, landmark_bounds,
+		model_landmark_bounds,
 		cleanup, outdir_suffix, outdir_overwrite=True):
 	logging.info('####') ## INFO
 	logging.info('#### Processing video files') ## INFO
@@ -66,7 +65,7 @@ def process_videos(videos,
 		os.mkdir(outdir)
 		
 		## Extract frame from a specific timestamp in a video.
-		capture_frame(video, frame_prefix, times)
+		capture_frames(video, model_detector_path, model_names_path, model_names, model_landmark_bounds, frame_prefix, times)
 		
 		## Crop tests from each time frame
 		for time in times:
@@ -80,7 +79,7 @@ def process_videos(videos,
 			
 			crop_test_strip(frame_in, frame_out,
 					model_detector_path, model_names_path, model_names, model_intervals,
-					landmark_name, landmark_bounds)
+					model_landmark_bounds)
 		
 		## Extract "blank" time 0 RGB values for each test
 		blank_values = {}
@@ -106,11 +105,13 @@ def process_videos(videos,
 			
 			blank_RGB = blank_values[name]
 			adj_RGB = {}
-			adj_RGB['R'] = blank_RGB['R'] - RGB['R']
-			adj_RGB['G'] = blank_RGB['G'] - RGB['G']
-			adj_RGB['B'] = blank_RGB['B'] - RGB['B']
+			adj_RGB['score'] = blank_RGB['score'] - RGB['score']
+			adj_RGB['R']     = blank_RGB['R']     - RGB['R']
+			adj_RGB['G']     = blank_RGB['G']     - RGB['G']
+			adj_RGB['B']     = blank_RGB['B']     - RGB['B']
 			logging.debug('RGB: %s', adj_RGB) ## DEBUG
 			
+			results.write(name+'_score\t'+str(adj_RGB['score'])+'\n')
 			results.write(name+'_R\t'+str(adj_RGB['R'])+'\n')
 			results.write(name+'_G\t'+str(adj_RGB['G'])+'\n')
 			results.write(name+'_B\t'+str(adj_RGB['B'])+'\n')
@@ -147,19 +148,22 @@ def process_videos(videos,
 # Extract a single frame from a given time point in the provided video file
 #
 # Parameters:
-#	video_filename	input video files
-#	out_prefix	prefix to use for frames that we extract from video
-#	seconds		second into video to grab frame from
-def capture_frame(video_filename, out_prefix, seconds):
+#	video_filename		input video files
+#	model_detector_path	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
+#	model_names_path	path to names file (e.g., 'models/teststrips.names')
+#	model_names		names of model objects
+#	model_landmark_bounde	dict of landmark features to check for in image
+#	out_prefix		prefix to use for frames that we extract from video
+#	seconds			second into video to grab frame from
+def capture_frames(video_filename, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix, seconds):
 	seconds = sorted(seconds) # sort so it is ordered smallest to largest
 	vid = mpy.VideoFileClip(video_filename)
-	
-	# Check that seconds argument does not excede total video duration
 	logging.debug('Video duration: %s seconds', vid.duration) ## DEBUG
+	logging.debug('Reported video rotation: %s', vid.rotation) ## DEBUG
 	
 	# Extract first frame with timestamp higher then what is requested. 
-	logging.debug('Video rotation: %s', vid.rotation) ## DEBUG
-	vid = video_rotation(vid)
+	logging.info('Checking and correcting video rotation') ## INFO
+	vid = video_rotation(vid, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix)
 	last_valid_frame = []
 	
 	warnings.filterwarnings('error')
@@ -193,22 +197,75 @@ def capture_frame(video_filename, out_prefix, seconds):
 # Code based on https://github.com/Zulko/moviepy/issues/586
 # 
 # Parameters:
-#	video	video file to process
-def video_rotation(video):
-	rotation = video.rotation
-	if rotation == 0:
-		video = video.rotate(-90)
-	elif rotation == 90:
-		video = video.resize(video.size[::-1])
-		video.rotation = 0
-	elif rotation == 180:
-		video = video.rotate(90)
-	elif rotation == 270:
-		video = video.resize(video.size[::-1])
-		video = video.rotate(180)  # Moviepy can only cope with 90, -90, and 180 degree turns
-	else:
-		logging.warning('Video has a weird rotation (i.e., not 0, 90, 180, or 270) of %s!', rotation)
-	return video
+#	video			video file to process
+#	model_detector_path	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
+#	model_names_path	path to names file (e.g., 'models/teststrips.names')
+#	model_names		names of model objects
+#	model_landmark_bounde	dict of landmark features to check for in image
+#	out_prefix		prefix to use for frames that we extract from video
+#	test_frame_num		number of frame to use for rotation testing
+def video_rotation(video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix, test_frame_num=10):
+	
+	# Rotate 0
+	logging.debug('Trying roation 0') ## DEBUG
+	t_video = video.rotate(-90)
+	if extract_and_check_rotation_frame(t_video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix+'.rotate0', test_frame_num):
+		logging.debug('- Success!') ## DEBUG
+		return(t_video)
+	
+	# Rotate forward 90
+	logging.debug('Trying roation 90') ## DEBUG
+	t_video = video.resize(video.size[::-1])
+	t_video.rotation = 0
+	if extract_and_check_rotation_frame(t_video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix+'.rotate90', test_frame_num):
+		logging.debug('- Success!') ## DEBUG
+		return(t_video)
+	
+	# Rotate forward 180
+	logging.debug('Trying roation 180') ## DEBUG
+	t_video = video.rotate(90)
+	if extract_and_check_rotation_frame(t_video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix+'.rotate180', test_frame_num):
+		logging.debug('- Success!') ## DEBUG
+		return(t_video)
+	
+	# Rotate forward 270:
+	logging.debug('Trying roation 270') ## DEBUG
+	t_video = video.resize(video.size[::-1])
+	t_video = t_video.rotate(180)  # Moviepy can only cope with 90, -90, and 180 degree turns
+	if extract_and_check_rotation_frame(t_video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix+'.rotate270', test_frame_num):
+		logging.debug('- Success!') ## DEBUG
+		return(t_video)
+	
+	# If we havent found the correct rotation yet (or we could not find the landmark)
+	logging.error('Video appears to have either a weird rotation (i.e., not 0, 90, 180, or 270; video says it has a rotation of %s) or we could not find the landmark (called %s). We will move ahead using the default roation but this will likely fail.', 
+		video.rotation, model_landmark_bounds["name"]) ## ERROR
+	return(video)
+
+
+def extract_and_check_rotation_frame(video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix, test_frame_num=10):
+	frame_filename      = out_prefix+'.png'
+	ML_frame_fileprefix = out_prefix
+	warnings.filterwarnings('error')
+	try:
+		for i, (tstamp, frame) in enumerate(video.iter_frames(with_times=True)):
+			if i == test_frame_num:
+				img = Image.fromarray(frame, 'RGB')
+				img.save(frame_filename)
+				break
+			# Save last valid frame incase we run out of video of the last times
+			last_valid_frame = frame
+	except Warning:
+		logging.warning('Video is too short to identify rotation! Trying to take the last valid frame to fix this') ## WARNING
+		img = Image.fromarray(last_valid_frame, 'RGB')
+		img.save(frame_filename)
+	warnings.filterwarnings('ignore')
+	
+	frame = cv2.imread(frame_filename)
+	frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+	landmark_found, l_xmin, l_ymin, l_xmax, l_ymax = check_landmark(frame,
+		model_detector_path, model_names_path, model_names, model_landmark_bounds,
+		ML_frame_fileprefix)
+	return(landmark_found)
 
 
 

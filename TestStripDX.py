@@ -6,8 +6,7 @@ from argparse import RawTextHelpFormatter
 import logging
 
 ALLOWED_MODELS= ['URS10']
-ML_LANDMARKS = {"URS10":"Glucose"}
-ML_LANDMARKS_BOUNDS = {"URS10":{"xmin":400, "xmax":600, "ymin":5, "ymax":200}}
+ML_LANDMARKS_BOUNDS = {"URS10":{"name":"Glucose", "xmin":300, "xmax":600, "ymin":5, "ymax":200}}
 
 
 ##
@@ -231,7 +230,7 @@ elif args.command == 'process':
 	process_videos(args.in_videos,
 			model_detector_path, model_names_path,
 			model_names, model_intervals,
-			ML_LANDMARKS["URS10"], ML_LANDMARKS_BOUNDS["URS10"],
+			ML_LANDMARKS_BOUNDS["URS10"],
 			args.cleanup, args.suffix)
 elif args.command == 'combine':
 	from src.merge import *
