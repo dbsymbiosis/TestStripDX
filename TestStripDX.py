@@ -7,7 +7,7 @@ import logging
 
 ALLOWED_MODELS= ['URS10']
 ML_LANDMARKS_BOUNDS = {"URS10":{"name":"Glucose", "xmin":300, "xmax":600, "ymin":5, "ymax":200}}
-
+LIGHT_STANDARD = {"URS10":{"name":"light_standard", "xmin":20, "xmax":85, "ymin":120, "ymax":140}}
 
 ##
 ## Pass command line arguments.
@@ -230,7 +230,8 @@ elif args.command == 'process':
 	process_videos(args.in_videos,
 			model_detector_path, model_names_path,
 			model_names, model_intervals,
-			ML_LANDMARKS_BOUNDS["URS10"],
+			ML_LANDMARKS_BOUNDS[args.model],
+			LIGHT_STANDARD[args.model],
 			args.cleanup, args.suffix)
 elif args.command == 'combine':
 	from src.merge import *

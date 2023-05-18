@@ -44,6 +44,10 @@ def crop_test_strip(image_path, output_path,
 			model_landmark_bounds["name"], l_xmin, l_xmax, l_ymin, l_ymax,
 			model_landmark_bounds["xmin"], model_landmark_bounds["xmax"], model_landmark_bounds["ymin"], model_landmark_bounds["ymax"]) # WARNING
 	
+	# Add blank to list
+	#                       name,    time, xmin, xmax, ymin, ymax
+	model_intervals.append(['blank', 0,    20,   85,   120,   140])
+	
 	# hold all detection data in one variable
 	bboxes = np.array([  [
 				l_xmin + xmin, 
@@ -194,6 +198,7 @@ def draw_bbox(image, data, show_label=True):
 		fontScale = 0.5
 		class_name = names[i]
 		bbox_color = colors[i]
+		logging.debug('name:%s; color:%s; coords:%s', class_name, bbox_color, coor) ## DEBUG
 		bbox_thick = int(0.6 * (image_h + image_w) / 600)
 		c1, c2 = (int(coor[0]), int(coor[1])), (int(coor[2]), int(coor[3]))
 		cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)

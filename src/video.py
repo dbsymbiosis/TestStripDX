@@ -2,6 +2,7 @@ import sys
 import os
 import logging
 import numpy as np
+import copy as copy
 from moviepy import *
 import moviepy.editor as mpy
 from PIL import Image, ImageDraw
@@ -15,23 +16,36 @@ import warnings
 # Process test strip video files
 #
 # Parameters:
-#	videos			input video files
-#	model_detector_path 	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
-#	model_names_path	path to names file (e.g., 'models/teststrips.names')
-#	model_names		names of model objects
-#	model_intervals		test intervals/coords
-#	model_landmark_bounds	bounding coords of landmark
-#	cleanup			cleanup temp files once finished processing video
-#	outdir_suffix		suffix to add to output results files
-#	outdir_overwrite	overwrite output director directory (default: True)
+#	videos				input video files
+#	model_detector_path	 	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
+#	model_names_path		path to names file (e.g., 'models/teststrips.names')
+#	model_names			names of model objects
+#	model_intervals			test intervals/coords
+#	model_landmark_bounds		bounding coords of landmark
+#	model_color_standard_bounds	bounds of color standards (for light normalization)
+#	cleanup				cleanup temp files once finished processing video
+#	outdir_suffix			suffix to add to output results files
+#	outdir_overwrite		overwrite output director directory (default: True)
 def process_videos(videos, 
 		model_detector_path, model_names_path,
 		model_names, model_intervals,
 		model_landmark_bounds,
+		model_color_standard_bounds,
 		cleanup, outdir_suffix, outdir_overwrite=True):
 	logging.info('####') ## INFO
 	logging.info('#### Processing video files') ## INFO
 	logging.info('####') ## INFO
+	
+	## Add color standard(s) to list of interval to crop.
+	model_intervals_tocrop = copy.deepcopy(model_intervals)
+	model_intervals_tocrop.append([
+					model_color_standard_bounds['name'], # name
+					0,                                   # time
+					model_color_standard_bounds['xmin'], # xmin
+					model_color_standard_bounds['xmax'], # xmax
+					model_color_standard_bounds['ymin'], # ymin
+					model_color_standard_bounds['ymax'], # ymax
+				])
 	
 	## Times to extract from video - make unique and sort.
 	# Add time 0 to list to use as blank
@@ -78,37 +92,40 @@ def process_videos(videos,
 			logging.debug('Out prefix: %s', frame_out) ## DEBUG
 			
 			crop_test_strip(frame_in, frame_out,
-					model_detector_path, model_names_path, model_names, model_intervals,
+					model_detector_path, model_names_path, model_names, 
+					model_intervals_tocrop,
 					model_landmark_bounds)
-		
-		## Extract "blank" time 0 RGB values for each test
-		blank_values = {}
-		for name, time, xmin, xmax, ymin, ymax in model_intervals:
-			target_frame = os.path.join(frame_prefix+"."+str(0)+"sec.detect.crop", name+".png")
-			logging.debug('Searching for %s test in %s', name, target_frame) ## DEBUG
-			
-			RGB = extract_colors(target_frame)
-			logging.debug('RGB: %s', RGB) ## DEBUG
-			
-			blank_values[name] = RGB
 		
 		## Open results file
 		results = open(results_file, 'w')
 		
 		## Generate RGB for each test crop from the specificed time frame.
 		for name, time, xmin, xmax, ymin, ymax in model_intervals:
+			## Extract "blank" crop
+			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", "blank.png")
+			logging.debug('Searching for %s test in %s', "blank", target_frame) ## DEBUG
+			
+			RGB = extract_colors(target_frame)
+			logging.debug('blank white standard RGB: %s', RGB) ## DEBUG
+			
+			blank_RGB = {}
+			blank_RGB['score'] = 255 - RGB['score']
+			blank_RGB['R']     = 255 - RGB['R']
+			blank_RGB['G']     = 255 - RGB['G']
+			blank_RGB['B']     = 255 - RGB['B']
+			
+			# Extract target crop and time
 			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", name+".png")
 			logging.debug('Searching for %s test in %s', name, target_frame) ## DEBUG
 			
 			RGB = extract_colors(target_frame)
 			logging.debug('RGB: %s', RGB) ## DEBUG
 			
-			blank_RGB = blank_values[name]
 			adj_RGB = {}
-			adj_RGB['score'] = blank_RGB['score'] - RGB['score']
-			adj_RGB['R']     = blank_RGB['R']     - RGB['R']
-			adj_RGB['G']     = blank_RGB['G']     - RGB['G']
-			adj_RGB['B']     = blank_RGB['B']     - RGB['B']
+			adj_RGB['score'] = RGB['score'] + blank_RGB['score'] 
+			adj_RGB['R']     = RGB['R']     + blank_RGB['R'] 
+			adj_RGB['G']     = RGB['G']     + blank_RGB['G'] 
+			adj_RGB['B']     = RGB['B']     + blank_RGB['B'] 
 			logging.debug('RGB: %s', adj_RGB) ## DEBUG
 			
 			results.write(name+'_score\t'+str(adj_RGB['score'])+'\n')
