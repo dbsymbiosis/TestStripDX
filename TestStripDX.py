@@ -64,8 +64,8 @@ parser_process_video.add_argument('-i', '--in_videos', metavar='teststrip.mp4',
 	help='Video files to process'
 )
 parser_process_video.add_argument('-m', '--model', metavar='model_name',
-	required=False, type=str, default='URS10', choices=ALLOWED_MODELS,
-	help='Name of test strip being run (default: %(default)s; choices: [%(choices)s])'
+	required=False, type=str, default='URS10',
+	help='Name of test strip being run. (default: %(default)s). Must have downloaded model files in models/ directory.'
 )
 parser_process_video.add_argument('-s', '--suffix', metavar='TestStripDX',
 	required=False, type=str, default='.TestStripDX',
@@ -104,8 +104,8 @@ parser_combine_results.add_argument('-o', '--out_combined', metavar='combined.tx
 	help='Output file (default: stdout)'
 )
 parser_combine_results.add_argument('-m', '--model', metavar='model_name',
-	required=False, type=str, default='URS10', choices=ALLOWED_MODELS,
-	help='Name of test strip being run (default: %(default)s ; choices: [%(choices)s])'
+	required=False, type=str, default='URS10',
+	help='Name of test strip being run. (default: %(default)s). Must have downloaded model files in models/ directory.'
 )
 parser_combine_results.add_argument('--debug',
 	required=False, action='store_true',
