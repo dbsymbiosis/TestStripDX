@@ -6,14 +6,13 @@ from argparse import RawTextHelpFormatter
 import logging
 import subprocess
 
-__version__ = subprocess.check_output(
-			['git', 'rev-parse', 'HEAD'], 
-			cwd=os.path.dirname(os.path.realpath(__file__))
-		).decode('ascii').strip()
 
-ALLOWED_MODELS= ['URS10']
-ML_LANDMARKS_BOUNDS = {"URS10":{"name":"Glucose", "xmin":300, "xmax":600, "ymin":5, "ymax":200}}
-LIGHT_STANDARD = {"URS10":{"name":"light_standard", "xmin":20, "xmax":85, "ymin":120, "ymax":140}}
+## Get git hash and branch to use as program version
+cwd=os.path.dirname(os.path.realpath(__file__))
+git_branch  = subprocess.check_output(['git', 'branch', '--show-current'], cwd=cwd).decode('ascii').strip()
+git_hash    = subprocess.check_output(['git', 'rev-parse', 'HEAD'],        cwd=cwd).decode('ascii').strip()
+__version__ = git_branch + ' ' + git_hash
+
 
 ##
 ## Pass command line arguments.
@@ -40,8 +39,8 @@ parser_convert_detector = subparsers.add_parser('convert',
 	description=CONVERT_DETECTOR_DESCRIPTION
 )
 parser_convert_detector.add_argument('-m', '--model', metavar='model_name',
-	required=False, type=str, default='URS10', choices=ALLOWED_MODELS,
-	help='Name of test strip being run (default: %(default)s; choices: [%(choices)s])'
+	required=False, type=str, default='URS10',
+	help='Name of test strip being run. (default: %(default)s). Must have downloaded model files in models/ directory.'
 )
 parser_convert_detector.add_argument('--debug',
 	required=False, action='store_true',
@@ -169,26 +168,23 @@ logging.info('Version: ' + __version__)
 ## Model variables
 if args.command != 'joinPDFs':
 	script_dir = os.path.abspath(os.path.dirname(__file__))
-	models_dir            = 'models'
-	model_weights_path    = os.path.join(script_dir, models_dir, args.model+'.weights')
-	model_names_path      = os.path.join(script_dir, models_dir, args.model+'.names')
-	model_intervals_path  = os.path.join(script_dir, models_dir, args.model+'.coords')
-	model_detector_path   = os.path.join(script_dir, models_dir, args.model+'.detector')
+	models_dir                 = 'models'
+	model_weights_path         = os.path.join(script_dir, models_dir, args.model+'.weights')
+	model_names_path           = os.path.join(script_dir, models_dir, args.model+'.names')
+	model_intervals_path       = os.path.join(script_dir, models_dir, args.model+'.coords')
+	model_landmark_bounds_path = os.path.join(script_dir, models_dir, args.model+'.landmark_bounds')
+	model_light_standard_path  = os.path.join(script_dir, models_dir, args.model+'.light_standard')
+	model_detector_path        = os.path.join(script_dir, models_dir, args.model+'.detector')
 	
-	## Load targets info
+	## Check model files exist
 	logging.info('Checking model files (%s/%s.*) exist', models_dir, args.model) ## INFO
-	if not os.path.exists(model_weights_path):
-		logging.error('Targets file (%s) does not exist!', model_weights_path) ## ERROR
-		sys.exit(1)
-	if not os.path.exists(model_names_path):
-		logging.error('Targets file (%s) does not exist!', model_names_path) ## ERROR
-		sys.exit(1)
-	if not os.path.exists(model_intervals_path):
-		logging.error('Targets file (%s) does not exist!', model_intervals_path) ## ERROR
-		sys.exit(1)
+	for file_path in [model_weights_path, model_names_path, model_intervals_path, model_landmark_bounds_path, model_intervals_path]:
+		if not os.path.exists(file_path):
+			logging.error('Model file (%s) does not exist!', file_path) ## ERROR
+			sys.exit(1)
 	if args.command != 'convert':
 		if not os.path.exists(model_detector_path):
-			logging.error('Targets file (%s) does not exist!', model_detector_path) ## ERROR
+			logging.error('Detector file (%s) does not exist! Please run "convert" to create it from the weights file.', model_detector_path) ## ERROR
 			sys.exit(1)
 	
 	## Open targets file and convert to [[str, int, float, float, float, float], [str, int, float, float, float, float], ...]
@@ -223,7 +219,44 @@ if args.command != 'joinPDFs':
 			name = line.split('\t')[0]
 			model_names.append(name)
 	logging.debug('model_names: %s', model_names) ## DEBUG
-
+	
+	## Open file listing landmark bounds and convert to {"name":str, "xmin":int, "xmax":int, "ymin":int, "ymax":int}
+	logging.info('Opening file %s with list of landmark objects to use for image orientation', model_names_path) ## INFO
+	model_landmark_bounds = dict()
+	with open(model_landmark_bounds_path, 'r') as fh:
+		for line in fh:
+			line = line.strip()
+			# Ignore empty or commented out characters
+			if line.startswith('#') or not line:
+				continue
+			
+			line_split = line.split('\t')
+			model_landmark_bounds["name"] = line_split[0]
+			model_landmark_bounds["xmin"] = line_split[1]
+			model_landmark_bounds["xmax"] = line_split[2]
+			model_landmark_bounds["ymin"] = line_split[3]
+			model_landmark_bounds["ymax"] = line_split[4]
+			break # Only interested in the first non-blank/comment line
+	logging.debug('model_landmark_bounds: %s', model_landmark_bounds) ## DEBUG
+	
+	## Open file listing position of white space to use as light standard and convert to {"name":str, "xmin":int, "xmax":int, "ymin":int, "ymax":int}
+	logging.info('Opening file %s with list of landmark objects to use for image orientation', model_names_path) ## INFO
+	model_light_standard = dict()
+	with open(model_light_standard_path, 'r') as fh:
+		for line in fh:
+			line = line.strip()
+			# Ignore empty or commented out characters
+			if line.startswith('#') or not line:
+				continue
+			
+			line_split = line.split('\t')
+			model_light_standard["name"] = line_split[0]
+			model_light_standard["xmin"] = line_split[1]
+			model_light_standard["xmax"] = line_split[2]
+			model_light_standard["ymin"] = line_split[3]
+			model_light_standard["ymax"] = line_split[4]
+			break # Only interested in the first non-blank/comment line
+	logging.debug('model_light_standard: %s', model_light_standard) ## DEBUG
 
 
 ## Run subcommand
@@ -237,8 +270,8 @@ elif args.command == 'process':
 	process_videos(args.in_videos,
 			model_detector_path, model_names_path,
 			model_names, model_intervals,
-			ML_LANDMARKS_BOUNDS[args.model],
-			LIGHT_STANDARD[args.model],
+			model_landmark_bounds,
+			model_light_standard,
 			args.cleanup, args.suffix)
 elif args.command == 'combine':
 	from src.merge import *
