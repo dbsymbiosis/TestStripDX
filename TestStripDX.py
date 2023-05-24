@@ -4,6 +4,12 @@ import os
 import argparse
 from argparse import RawTextHelpFormatter
 import logging
+import subprocess
+
+__version__ = subprocess.check_output(
+			['git', 'rev-parse', 'HEAD'], 
+			cwd=os.path.dirname(os.path.realpath(__file__))
+		).decode('ascii').strip()
 
 ALLOWED_MODELS= ['URS10']
 ML_LANDMARKS_BOUNDS = {"URS10":{"name":"Glucose", "xmin":300, "xmax":600, "ymin":5, "ymax":200}}
@@ -14,11 +20,11 @@ LIGHT_STANDARD = {"URS10":{"name":"light_standard", "xmin":20, "xmax":85, "ymin"
 ##
 DESCRIPTION = '''
 
-TestStripDX
+TestStripDX Version: {version}
 
 An image processing framework for processing and extracting test strip results from a photo.
 
-'''
+'''.format(version=__version__)
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=DESCRIPTION)
 subparsers = parser.add_subparsers(dest='command', required=True)
 
@@ -158,6 +164,7 @@ logging.debug('%s', args) ## DEBUG
 logging.info('########################################################') ## INFO
 logging.info('                   TestStripDX Started                  ') ## INFO
 logging.info('########################################################') ## INFO
+logging.info('Version: ' + __version__)
 
 ## Model variables
 if args.command != 'joinPDFs':
