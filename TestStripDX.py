@@ -232,10 +232,10 @@ if args.command != 'joinPDFs':
 			
 			line_split = line.split('\t')
 			model_landmark_bounds["name"] = line_split[0]
-			model_landmark_bounds["xmin"] = line_split[1]
-			model_landmark_bounds["xmax"] = line_split[2]
-			model_landmark_bounds["ymin"] = line_split[3]
-			model_landmark_bounds["ymax"] = line_split[4]
+			model_landmark_bounds["xmin"] = int(line_split[1])
+			model_landmark_bounds["xmax"] = int(line_split[2])
+			model_landmark_bounds["ymin"] = int(line_split[3])
+			model_landmark_bounds["ymax"] = int(line_split[4])
 			break # Only interested in the first non-blank/comment line
 	logging.debug('model_landmark_bounds: %s', model_landmark_bounds) ## DEBUG
 	
@@ -251,10 +251,10 @@ if args.command != 'joinPDFs':
 			
 			line_split = line.split('\t')
 			model_light_standard["name"] = line_split[0]
-			model_light_standard["xmin"] = line_split[1]
-			model_light_standard["xmax"] = line_split[2]
-			model_light_standard["ymin"] = line_split[3]
-			model_light_standard["ymax"] = line_split[4]
+			model_light_standard["xmin"] = int(line_split[1])
+			model_light_standard["xmax"] = int(line_split[2])
+			model_light_standard["ymin"] = int(line_split[3])
+			model_light_standard["ymax"] = int(line_split[4])
 			break # Only interested in the first non-blank/comment line
 	logging.debug('model_light_standard: %s', model_light_standard) ## DEBUG
 
