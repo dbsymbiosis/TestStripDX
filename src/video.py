@@ -47,6 +47,9 @@ def process_videos(videos,
 					model_color_standard_bounds['ymax'], # ymax
 				])
 	
+	## Times to extract from video - make unique and sort.
+	times = sorted(set([x[1] for x in model_intervals]))
+	
 	for video in videos:
 		logging.info('# Extracting frames from %s', video) ## INFO
 		
