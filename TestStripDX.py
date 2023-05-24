@@ -25,6 +25,7 @@ An image processing framework for processing and extracting test strip results f
 
 '''.format(version=__version__)
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=DESCRIPTION)
+parser.add_argument('-v', '--version', action='version', version=__version__)
 subparsers = parser.add_subparsers(dest='command', required=True)
 
 ##

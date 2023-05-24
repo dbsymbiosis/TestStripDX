@@ -47,10 +47,6 @@ def process_videos(videos,
 					model_color_standard_bounds['ymax'], # ymax
 				])
 	
-	## Times to extract from video - make unique and sort.
-	# Add time 0 to list to use as blank
-	times = [0] + sorted(set([x[1] for x in model_intervals]))
-	
 	for video in videos:
 		logging.info('# Extracting frames from %s', video) ## INFO
 		
@@ -101,12 +97,12 @@ def process_videos(videos,
 		
 		## Generate RGB for each test crop from the specificed time frame.
 		for name, time, xmin, xmax, ymin, ymax in model_intervals:
-			## Extract "blank" crop
-			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", "blank.png")
-			logging.debug('Searching for %s test in %s', "blank", target_frame) ## DEBUG
+			## Extract "blank" crop to use for light standardization
+			target_frame = os.path.join(frame_prefix+"."+str(time)+"sec.detect.crop", model_color_standard_bounds['name']+".png")
+			logging.debug('Searching for %s test in %s', model_color_standard_bounds['name'], target_frame) ## DEBUG
 			
 			RGB = extract_colors(target_frame)
-			logging.debug('blank white standard RGB: %s', RGB) ## DEBUG
+			logging.debug('white standard RGB: %s', RGB) ## DEBUG
 			
 			blank_RGB = {}
 			blank_RGB['score'] = 255 - RGB['score']

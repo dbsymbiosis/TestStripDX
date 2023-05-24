@@ -44,10 +44,6 @@ def crop_test_strip(image_path, output_path,
 			model_landmark_bounds["name"], l_xmin, l_xmax, l_ymin, l_ymax,
 			model_landmark_bounds["xmin"], model_landmark_bounds["xmax"], model_landmark_bounds["ymin"], model_landmark_bounds["ymax"]) # WARNING
 	
-	# Add blank to list
-	#                       name,    time, xmin, xmax, ymin, ymax
-	model_intervals.append(['blank', 0,    20,   85,   120,   140])
-	
 	# hold all detection data in one variable
 	bboxes = np.array([  [
 				l_xmin + xmin, 
