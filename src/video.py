@@ -161,7 +161,7 @@ def process_videos(videos,
 
 
 
-# Extract a single frame from a given time point in the provided video file
+# Extract a frames from a given time point in the provided video file
 #
 # Parameters:
 #	video_filename		input video files
@@ -171,17 +171,20 @@ def process_videos(videos,
 #	model_landmark_bounde	dict of landmark features to check for in image
 #	out_prefix		prefix to use for frames that we extract from video
 #	seconds			second into video to grab frame from
-def capture_frames(video_filename, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix, seconds):
+#	rotate			rotate video before extracting frames
+def capture_frames(video_filename, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix, seconds, rotate=True):
 	seconds = sorted(seconds) # sort so it is ordered smallest to largest
 	vid = mpy.VideoFileClip(video_filename)
 	logging.debug('Video duration: %s seconds', vid.duration) ## DEBUG
 	logging.debug('Reported video rotation: %s', vid.rotation) ## DEBUG
 	
-	# Extract first frame with timestamp higher then what is requested. 
-	logging.info('Checking and correcting video rotation') ## INFO
-	vid = video_rotation(vid, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix)
-	last_valid_frame = []
+	# Rotate video if needed. 
+	if rotate:
+		logging.info('Checking and correcting video rotation') ## INFO
+		vid = video_rotation(vid, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix)
 	
+	# Extract first frame with timestamp higher then what is requested.
+	last_valid_frame = []
 	warnings.filterwarnings('error')
 	try:
 		for i, (tstamp, frame) in enumerate(vid.iter_frames(with_times=True)):

@@ -118,7 +118,7 @@ parser_combine_results.add_argument('--debug',
 ##
 JOINPDFS_DESCRIPTION = '''
 
-Takes a list of PDF files (either from command line or from stdin) and merges them into a single multipage document
+Takes a list of PDF files (either from command line or from stdin) and merges them into a single multipage document.
 
 NOTE:
         - Depending on the PDFs being merged this script might produce a few warnings:
@@ -147,6 +147,41 @@ parser_joinPDFs.add_argument('--debug',
 )
 
 ##
+## Parser for command to join PDFs
+##
+EXTRACT_FRAMES_DESCRIPTION = '''
+
+Extract frames from a video at key time points.
+
+This function is mostly used for collecting images to train the ML model.
+'''
+parser_extract_frames = subparsers.add_parser('extract',
+	help='Extract frames from video',
+	description=EXTRACT_FRAMES_DESCRIPTION,
+	formatter_class=RawTextHelpFormatter
+)
+parser_extract_frames.add_argument('-i', '--in_videos', metavar='teststrip.mp4',
+	required=True, nargs='+', type=str,
+	help='Video files to extract frames from.'
+)
+parser_extract_frames.add_argument('-t', '--times', metavar=10,
+	required=False, nargs='+', type=int, default=None,
+	help='Time points at which to extract frames (default: use the times from --model).'
+)
+parser_extract_frames.add_argument('-m', '--model', metavar='model_name',
+	required=False, type=str, default='URS10',
+	help='Name of test strip being run. (default: %(default)s). Must have downloaded model files in models/ directory.'
+)
+parser_extract_frames.add_argument('-o', '--outdir', metavar='extracted_frames',
+	required=False, type=str, default='extracted_frames',
+	help='Directory where we will output the extracted frames (default: %(default)s)'
+)
+parser_extract_frames.add_argument('--debug',
+	required=False, action='store_true',
+	help='Print DEBUG info (default: %(default)s)'
+)
+
+##
 ## Parse all arguments.
 ##
 args = parser.parse_args()
@@ -166,7 +201,7 @@ logging.info('                   TestStripDX Started                  ') ## INFO
 logging.info('########################################################') ## INFO
 logging.info('Version: ' + __version__)
 
-## Model variables
+## Set envs for commands that use a model
 if args.command != 'joinPDFs':
 	script_dir = os.path.abspath(os.path.dirname(__file__))
 	models_dir                 = 'models'
@@ -176,7 +211,9 @@ if args.command != 'joinPDFs':
 	model_landmark_bounds_path = os.path.join(script_dir, models_dir, args.model+'.landmark_bounds')
 	model_light_standard_path  = os.path.join(script_dir, models_dir, args.model+'.light_standard')
 	model_detector_path        = os.path.join(script_dir, models_dir, args.model+'.detector')
-	
+
+## Model variables
+if args.command in ['convert', 'process', 'combine']:
 	## Check model files exist
 	logging.info('Checking model files (%s/%s.*) exist', models_dir, args.model) ## INFO
 	for file_path in [model_weights_path, model_names_path, model_intervals_path, model_landmark_bounds_path, model_intervals_path]:
@@ -258,6 +295,25 @@ if args.command != 'joinPDFs':
 			model_light_standard["ymax"] = int(line_split[4])
 			break # Only interested in the first non-blank/comment line
 	logging.debug('model_light_standard: %s', model_light_standard) ## DEBUG
+	
+elif args.command in ['extract']:
+	seconds = []
+	if args.times != None:
+		seconds = args.times
+	else:
+		## Open targets file and convert to [[str, int, float, float, float, float], [str, int, float, float, float, float], ...]
+		logging.info('Opening file %s with list of test times', model_intervals_path) ## INFO
+		with open(model_intervals_path, 'r') as fh:
+			for line in fh:
+				line = line.strip()
+				# Ignore empty or commented out characters
+				if line.startswith('#') or not line:
+					continue
+				
+				name, time, xmin, ymin = line.split('\t')
+				seconds.append(int(time))
+	seconds = list(set(seconds))
+	logging.debug('seconds: %s', seconds) ## DEBUG
 
 
 ## Run subcommand
@@ -280,6 +336,9 @@ elif args.command == 'combine':
 elif args.command == 'joinPDFs':
 	from src.merge import *
 	joinPDFs(args.in_pdfs, args.out_pdf)
+elif args.command == 'extract':
+	from src.extract import *
+	extract(args.in_videos, args.outdir, seconds)
 
 
 
