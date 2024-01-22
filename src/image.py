@@ -18,18 +18,23 @@ from src.detector import detect_test_strip
 #	image_path	 	path to input image
 #	output		 	path to output folder
 #       model_detector_path	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
-#       model_names_path 	path to names file (e.g., 'models/teststrips.names')
-#	model_intervals	 	test intervals/coords
-#	model_names	 	names of model objects
-#	model_landmark_bounds	bounding coords of landmark
-def crop_test_strip(image_path, output_path,
-		model_detector_path, model_names_path, model_names, model_intervals,
-		model_landmark_bounds):
+#	crop			crop detected regions out of image
+#	conf			object confidence threshold for detection
+#	imgsz			image size as scalar or (h, w) list, i.e. (640, 480)
+def run_detector_on_image(image_path, output_path,
+			model_detector_path,
+			crop=True,
+			conf=1.00,
+			imgsz=640)
 	logging.info('Start cropping tests from frame: %s', image_path) ## INFO
 	
-	# Import and format image
-	original_image = cv2.imread(image_path)
-	original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+	## Import model
+	model = YOLO(model_detector_path)
+	
+	## Get results from detector
+	model.predict(image_path, conf=conf, imgsz=imgsz)
+	
+	
 	
 	# Search for landmark using ML
 	logging.info(' - Using ML to search for landmark objects') ## INFO

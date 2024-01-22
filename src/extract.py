@@ -31,7 +31,7 @@ def extract(videos, outdir, seconds):
 		logging.info('# Extracting frames from %s', video) ## INFO
 		video_basename = os.path.basename(video)
 		out_prefix = os.path.join(outdir, video_basename + '.frame')
-		capture_frames(video, None, None, None, None, out_prefix, seconds, rotate=False)
+		capture_frames_from_video(video, out_prefix, seconds)
 		logging.info('# Done extracting frames from %s', video) ## INFO
 	
 	logging.info('####') ## INFO

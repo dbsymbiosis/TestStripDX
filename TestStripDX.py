@@ -29,26 +29,6 @@ parser.add_argument('-v', '--version', action='version', version=__version__)
 subparsers = parser.add_subparsers(dest='command', required=True)
 
 ##
-## Parser for the conversion of the yolov4 to Tensorflow detector
-##
-CONVERT_DETECTOR_DESCRIPTION = '''
-Convert yolov4 detector to Tensorflow detector
-Needs models/model_name.weights and models/model_name.names to exist.
-'''
-parser_convert_detector = subparsers.add_parser('convert', 
-	help='Convert yolov4 detector to Tensorflow detector',
-	description=CONVERT_DETECTOR_DESCRIPTION
-)
-parser_convert_detector.add_argument('-m', '--model', metavar='model_name',
-	required=False, type=str, default='URS10',
-	help='Name of test strip being run. (default: %(default)s). Must have downloaded model files in models/ directory.'
-)
-parser_convert_detector.add_argument('--debug',
-	required=False, action='store_true',
-	help='Print DEBUG info (default: %(default)s)'
-)
-
-##
 ## Parser for the processing of the test strip video files
 ##
 PROCESS_VIDEOS_DESCRIPTION = '''
@@ -204,141 +184,53 @@ logging.info('Version: ' + __version__)
 ## Set envs for commands that use a model
 if args.command != 'joinPDFs':
 	script_dir = os.path.abspath(os.path.dirname(__file__))
-	models_dir                 = 'models'
-	model_weights_path         = os.path.join(script_dir, models_dir, args.model+'.weights')
-	model_names_path           = os.path.join(script_dir, models_dir, args.model+'.names')
-	model_intervals_path       = os.path.join(script_dir, models_dir, args.model+'.coords')
-	model_landmark_bounds_path = os.path.join(script_dir, models_dir, args.model+'.landmark_bounds')
-	model_light_standard_path  = os.path.join(script_dir, models_dir, args.model+'.light_standard')
-	model_detector_path        = os.path.join(script_dir, models_dir, args.model+'.detector')
+	models_dir          = 'models'
+	model_params_path   = os.path.join(script_dir, models_dir, args.model+'.py')
+	model_detector_path = os.path.join(script_dir, models_dir, args.model+'.pt')
 
 ## Model variables
-if args.command in ['convert', 'process', 'combine']:
+if args.command in ['process', 'combine']:
 	## Check model files exist
 	logging.info('Checking model files (%s/%s.*) exist', models_dir, args.model) ## INFO
-	for file_path in [model_weights_path, model_names_path, model_intervals_path, model_landmark_bounds_path, model_intervals_path]:
+	for file_path in [model_params_path, model_detector_path]:
 		if not os.path.exists(file_path):
 			logging.error('Model file (%s) does not exist!', file_path) ## ERROR
 			sys.exit(1)
-	if args.command != 'convert':
-		if not os.path.exists(model_detector_path):
-			logging.error('Detector file (%s) does not exist! Please run "convert" to create it from the weights file.', model_detector_path) ## ERROR
-			sys.exit(1)
 	
-	## Open targets file and convert to [[str, int, float, float, float, float], [str, int, float, float, float, float], ...]
-	logging.info('Opening file %s with list of test coods', model_intervals_path) ## INFO
-	model_intervals = list()
-	box_x = 40
-	box_y = 40
-	with open(model_intervals_path, 'r') as fh:
-		for line in fh:
-			line = line.strip()
-			# Ignore empty or commented out characters
-			if line.startswith('#') or not line:
-				continue
-			
-			name, time, xmin, ymin = line.split('\t')
-			model_intervals.append([name, int(time),
-						float(xmin), float(xmin) + box_x,
-						float(ymin), float(ymin) + box_y
-						])
-	logging.debug('model_intervals: %s', model_intervals) ## DEBUG
-	
-	## Open landmark name list file and convert to [str, str, ...]
-	logging.info('Opening file %s with list of landmark objects to use for image orientation', model_names_path) ## INFO
-	model_names = list()
-	with open(model_names_path, 'r') as fh:
-		for line in fh:
-			line = line.strip()
-			# Ignore empty or commented out characters
-			if line.startswith('#') or not line:
-				continue
-			
-			name = line.split('\t')[0]
-			model_names.append(name)
-	logging.debug('model_names: %s', model_names) ## DEBUG
-	
-	## Open file listing landmark bounds and convert to {"name":str, "xmin":int, "xmax":int, "ymin":int, "ymax":int}
-	logging.info('Opening file %s with list of landmark objects to use for image orientation', model_names_path) ## INFO
-	model_landmark_bounds = dict()
-	with open(model_landmark_bounds_path, 'r') as fh:
-		for line in fh:
-			line = line.strip()
-			# Ignore empty or commented out characters
-			if line.startswith('#') or not line:
-				continue
-			
-			line_split = line.split('\t')
-			model_landmark_bounds["name"] = line_split[0]
-			model_landmark_bounds["xmin"] = int(line_split[1])
-			model_landmark_bounds["xmax"] = int(line_split[2])
-			model_landmark_bounds["ymin"] = int(line_split[3])
-			model_landmark_bounds["ymax"] = int(line_split[4])
-			break # Only interested in the first non-blank/comment line
-	logging.debug('model_landmark_bounds: %s', model_landmark_bounds) ## DEBUG
-	
-	## Open file listing position of white space to use as light standard and convert to {"name":str, "xmin":int, "xmax":int, "ymin":int, "ymax":int}
-	logging.info('Opening file %s with list of landmark objects to use for image orientation', model_names_path) ## INFO
-	model_light_standard = dict()
-	with open(model_light_standard_path, 'r') as fh:
-		for line in fh:
-			line = line.strip()
-			# Ignore empty or commented out characters
-			if line.startswith('#') or not line:
-				continue
-			
-			line_split = line.split('\t')
-			model_light_standard["name"] = line_split[0]
-			model_light_standard["xmin"] = int(line_split[1])
-			model_light_standard["xmax"] = int(line_split[2])
-			model_light_standard["ymin"] = int(line_split[3])
-			model_light_standard["ymax"] = int(line_split[4])
-			break # Only interested in the first non-blank/comment line
-	logging.debug('model_light_standard: %s', model_light_standard) ## DEBUG
-	
+	## Import model params
+	import model_params_path
+
 elif args.command in ['extract']:
-	seconds = []
+	times = []
 	if args.times != None:
-		seconds = args.times
+		times = args.times
 	else:
-		## Open targets file and convert to [[str, int, float, float, float, float], [str, int, float, float, float, float], ...]
-		logging.info('Opening file %s with list of test times', model_intervals_path) ## INFO
-		with open(model_intervals_path, 'r') as fh:
-			for line in fh:
-				line = line.strip()
-				# Ignore empty or commented out characters
-				if line.startswith('#') or not line:
-					continue
-				
-				name, time, xmin, ymin = line.split('\t')
-				seconds.append(int(time))
-	seconds = list(set(seconds))
-	logging.debug('seconds: %s', seconds) ## DEBUG
+		## Import model params
+		import model_params_path
+		
+		## Extract just the times from list of test names and times.
+		times = sorted(set([x[1] for x in TEST_ANALYSIS_TIMES]))
+	logging.debug('seconds: %s', times) ## DEBUG
 
 
 ## Run subcommand
 #	NOTE: Import each set of functions as needed becuase many of the packages take >30 sec to import
 #	      so we need to only run import when we need to
-if args.command == 'convert':
-	from src.detector import *
-	convert_detector(model_weights_path, model_names_path, model_detector_path)
-elif args.command == 'process':
+if args.command == 'process':
 	from src.video import *	
 	process_videos(args.in_videos,
-			model_detector_path, model_names_path,
-			model_names, model_intervals,
-			model_landmark_bounds,
-			model_light_standard,
+			model_detector_path,
+			TEST_ANALYSIS_TIMES, # Loaded from model_params_path
 			args.cleanup, args.suffix)
 elif args.command == 'combine':
 	from src.merge import *
-	combine_results(args.in_results, args.out_combined, model_intervals)
+	combine_results(args.in_results, args.out_combined, TEST_ANALYSIS_TIMES)
 elif args.command == 'joinPDFs':
 	from src.merge import *
 	joinPDFs(args.in_pdfs, args.out_pdf)
 elif args.command == 'extract':
 	from src.extract import *
-	extract(args.in_videos, args.outdir, seconds)
+	extract(args.in_videos, args.outdir, times)
 
 
 

@@ -17,42 +17,27 @@ import warnings
 #
 # Parameters:
 #	videos				input video files
-#	model_detector_path	 	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
-#	model_names_path		path to names file (e.g., 'models/teststrips.names')
-#	model_names			names of model objects
-#	model_intervals			test intervals/coords
-#	model_landmark_bounds		bounding coords of landmark
-#	model_color_standard_bounds	bounds of color standards (for light normalization)
+#	model_detector_path	 	path to detector file (e.g., 'models/teststrips.pt')
+#	test_analysis_times		list of test names and times [ ['t1', 5], ['t2', 10], ..., ... ]
 #	cleanup				cleanup temp files once finished processing video
 #	outdir_suffix			suffix to add to output results files
 #	outdir_overwrite		overwrite output director directory (default: True)
 def process_videos(videos, 
-		model_detector_path, model_names_path,
-		model_names, model_intervals,
-		model_landmark_bounds,
-		model_color_standard_bounds,
+		model_detector_path,
+		test_analysis_times,
 		cleanup, outdir_suffix, outdir_overwrite=True):
 	logging.info('####') ## INFO
 	logging.info('#### Processing video files') ## INFO
 	logging.info('####') ## INFO
 	
-	## Add color standard(s) to list of interval to crop.
-	model_intervals_tocrop = copy.deepcopy(model_intervals)
-	model_intervals_tocrop.append([
-					model_color_standard_bounds['name'], # name
-					0,                                   # time
-					model_color_standard_bounds['xmin'], # xmin
-					model_color_standard_bounds['xmax'], # xmax
-					model_color_standard_bounds['ymin'], # ymin
-					model_color_standard_bounds['ymax'], # ymax
-				])
-	
 	## Times to extract from video - make unique and sort.
 	times = sorted(set([x[1] for x in model_intervals]))
 	
+	## Process each video.
 	for video in videos:
 		logging.info('# Extracting frames from %s', video) ## INFO
 		
+		## Envs
 		outdir = video+outdir_suffix
 		results_file = outdir+'.results.txt'
 		frame_prefix = os.path.join(outdir, "frame")
@@ -78,7 +63,7 @@ def process_videos(videos,
 		os.mkdir(outdir)
 		
 		## Extract frame from a specific timestamp in a video.
-		capture_frames(video, model_detector_path, model_names_path, model_names, model_landmark_bounds, frame_prefix, times)
+		capture_frames_from_video(video, frame_prefix, times)
 		
 		## Crop tests from each time frame
 		for time in times:
@@ -90,11 +75,10 @@ def process_videos(videos,
 			logging.debug('In frame: %s', frame_in) ## DEBUG
 			logging.debug('Out prefix: %s', frame_out) ## DEBUG
 			
-			crop_test_strip(frame_in, frame_out,
-					model_detector_path, model_names_path, model_names, 
-					model_intervals_tocrop,
-					model_landmark_bounds)
+			run_detector_on_image(frame_in, frame_out,
+					model_detector_path) 
 		
+		sys.exit(0)
 		## Open results file
 		results = open(results_file, 'w')
 		
@@ -165,25 +149,14 @@ def process_videos(videos,
 #
 # Parameters:
 #	video_filename		input video files
-#	model_detector_path	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
-#	model_names_path	path to names file (e.g., 'models/teststrips.names')
-#	model_names		names of model objects
-#	model_landmark_bounde	dict of landmark features to check for in image
 #	out_prefix		prefix to use for frames that we extract from video
 #	seconds			second into video to grab frame from
-#	rotate			rotate video before extracting frames
-def capture_frames(video_filename, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix, seconds, rotate=True):
-	seconds = sorted(seconds) # sort so it is ordered smallest to largest
+def capture_frames_from_video(video_filename, out_prefix, seconds):
+	seconds = sorted(set(seconds)) # sort so it is ordered smallest to largest
 	vid = mpy.VideoFileClip(video_filename)
 	logging.debug('Video duration: %s seconds', vid.duration) ## DEBUG
-	logging.debug('Reported video rotation: %s', vid.rotation) ## DEBUG
 	
-	# Rotate video if needed. 
-	if rotate:
-		logging.info('Checking and correcting video rotation') ## INFO
-		vid = video_rotation(vid, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix)
-	
-	# Extract first frame with timestamp higher then what is requested.
+	## Extract first frame with timestamp higher then what is requested.
 	last_valid_frame = []
 	warnings.filterwarnings('error')
 	try:
@@ -209,82 +182,6 @@ def capture_frames(video_filename, model_detector_path, model_names_path, model_
 			frame_filename = out_prefix + '.' + str(time) + 'sec.png'
 			img.save(frame_filename)
 	warnings.filterwarnings('ignore')
-
-
-
-# Rotate video back to 0
-# Code based on https://github.com/Zulko/moviepy/issues/586
-# 
-# Parameters:
-#	video			video file to process
-#	model_detector_path	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
-#	model_names_path	path to names file (e.g., 'models/teststrips.names')
-#	model_names		names of model objects
-#	model_landmark_bounde	dict of landmark features to check for in image
-#	out_prefix		prefix to use for frames that we extract from video
-#	test_frame_num		number of frame to use for rotation testing
-def video_rotation(video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix, test_frame_num=10):
-	
-	# Rotate 0
-	logging.debug('Trying roation 0') ## DEBUG
-	t_video = video.rotate(-90)
-	if extract_and_check_rotation_frame(t_video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix+'.rotate0', test_frame_num):
-		logging.debug('- Success!') ## DEBUG
-		return(t_video)
-	
-	# Rotate forward 90
-	logging.debug('Trying roation 90') ## DEBUG
-	t_video = video.resize(video.size[::-1])
-	t_video.rotation = 0
-	if extract_and_check_rotation_frame(t_video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix+'.rotate90', test_frame_num):
-		logging.debug('- Success!') ## DEBUG
-		return(t_video)
-	
-	# Rotate forward 180
-	logging.debug('Trying roation 180') ## DEBUG
-	t_video = video.rotate(90)
-	if extract_and_check_rotation_frame(t_video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix+'.rotate180', test_frame_num):
-		logging.debug('- Success!') ## DEBUG
-		return(t_video)
-	
-	# Rotate forward 270:
-	logging.debug('Trying roation 270') ## DEBUG
-	t_video = video.resize(video.size[::-1])
-	t_video = t_video.rotate(180)  # Moviepy can only cope with 90, -90, and 180 degree turns
-	if extract_and_check_rotation_frame(t_video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix+'.rotate270', test_frame_num):
-		logging.debug('- Success!') ## DEBUG
-		return(t_video)
-	
-	# If we havent found the correct rotation yet (or we could not find the landmark)
-	logging.error('Video appears to have either a weird rotation (i.e., not 0, 90, 180, or 270; video says it has a rotation of %s) or we could not find the landmark (called %s). We will move ahead using the default roation but this will likely fail.', 
-		video.rotation, model_landmark_bounds["name"]) ## ERROR
-	return(video)
-
-
-def extract_and_check_rotation_frame(video, model_detector_path, model_names_path, model_names, model_landmark_bounds, out_prefix, test_frame_num=10):
-	frame_filename      = out_prefix+'.png'
-	ML_frame_fileprefix = out_prefix
-	warnings.filterwarnings('error')
-	try:
-		for i, (tstamp, frame) in enumerate(video.iter_frames(with_times=True)):
-			if i == test_frame_num:
-				img = Image.fromarray(frame, 'RGB')
-				img.save(frame_filename)
-				break
-			# Save last valid frame incase we run out of video of the last times
-			last_valid_frame = frame
-	except Warning:
-		logging.warning('Video is too short to identify rotation! Trying to take the last valid frame to fix this') ## WARNING
-		img = Image.fromarray(last_valid_frame, 'RGB')
-		img.save(frame_filename)
-	warnings.filterwarnings('ignore')
-	
-	frame = cv2.imread(frame_filename)
-	frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-	landmark_found, l_xmin, l_ymin, l_xmax, l_ymax = check_landmark(frame,
-		model_detector_path, model_names_path, model_names, model_landmark_bounds,
-		ML_frame_fileprefix)
-	return(landmark_found)
 
 
 
