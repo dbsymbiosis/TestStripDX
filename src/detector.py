@@ -6,6 +6,7 @@ from PIL import Image
 import numpy as np
 import src.utils as utils
 from ultralytics import YOLO
+import tensorflow as tf
 
 
 
@@ -25,7 +26,7 @@ def detect_test_strip(model_detector_path, model_names_path, model_names,
 		iou=0.45, score=0.95):
 	
 	# config
-	strides, anchors, num_class, xyscale = utils.load_config(False, 'yolov4', model_names_path)
+	# strides, anchors, num_class, xyscale = utils.load_config(False, 'yolov4', model_names_path)
 	
 	image_data = cv2.resize(original_image, (input_size, input_size))
 	image_data = image_data / 255.

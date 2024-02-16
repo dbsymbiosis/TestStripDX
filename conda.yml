@@ -18,3 +18,4 @@ dependencies:
   - lxml
   - easydict
   - pillow
+  - roboflow
