@@ -32,8 +32,8 @@ def process_videos(videos,
     logging.info('#### Processing video files')  ## INFO
     logging.info('####')  ## INFO
 
-    ## Times to extract from video - make unique and sort.
-    times = sorted(set([x for x in test_analysis_times]))
+    # Times to extract from video - make unique and sort.
+    times = sorted(set([x[1] for x in test_analysis_times]))
 
     ## Process each video.
     for video in videos:
@@ -68,7 +68,9 @@ def process_videos(videos,
 
         ## Extract frame from a specific timestamp in a video.
         capture_frames_from_video(video, frame_prefix, times)
-
+        # Dictionary containing the predictions by the model for different time frames.
+        # Key: time, value: prediction results from the model
+        predictions_for_frames = {}
         ## Crop tests from each time frame
         for time in times:
             frame_in = frame_prefix + "." + str(time) + "sec.png"
@@ -79,49 +81,53 @@ def process_videos(videos,
             logging.debug('In frame: %s', frame_in)  ## DEBUG
             logging.debug('Out prefix: %s', frame_out)  ## DEBUG
 
-            run_detector_on_image(frame_in, frame_out,
-                                  model_detector_path)
+            prediction = run_detector_on_image(frame_in, frame_out,
+                                               model_detector_path)
+            predictions_for_frames[str(time)] = prediction
 
-        sys.exit(0)
+        # sys.exit(0)
         ## Open results file
         results = open(results_file, 'w')
-
-        ## Generate RGB for each test crop from the specificed time frame.
-        for name, time, xmin, xmax, ymin, ymax in times:
-            ## Extract "blank" crop to use for light standardization
-            target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop",
-                                        model_color_standard_bounds['name'] + ".png")
-            logging.debug('Searching for %s test in %s', model_color_standard_bounds['name'], target_frame)  ## DEBUG
-
-            RGB = extract_colors(target_frame)
-            logging.debug('white standard RGB: %s', RGB)  ## DEBUG
-
-            blank_RGB = {}
-            blank_RGB['score'] = 255 - RGB['score']
-            blank_RGB['R'] = 255 - RGB['R']
-            blank_RGB['G'] = 255 - RGB['G']
-            blank_RGB['B'] = 255 - RGB['B']
-
+        logging.info(f'Generating RGB values for the different categories at the specified time stamps')
+        # TODO: should we calculate the RGB values of categories at all time frames
+        # Generating RGB for each test crop from the specificed time frame.
+        for test_name,time in test_analysis_times:
+            # Extracting the RGB values for the Standard colors.
+            # We will be using these standard values to adjust the values for the predicted boxes and reduce the affect
+            # of lightning
+            prediction_for_time_frame = predictions_for_frames[str(time)]
+            standards = {'R': 'Standard-Red', 'G': 'Standard-Green', 'B': 'Standard-Blue'}
+            standard_RGB = {}
+            standard_RGB['score'] = 0
+            standard_RGB['R'] = 0
+            standard_RGB['G'] = 0
+            standard_RGB['B'] = 0
+            for key in standards:
+                target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop",
+                                            standards[key] + ".png")
+                logging.debug('Searching for %s test in %s', standards[key], target_frame)  ## DEBUG
+                RGB = extract_colors(target_frame)
+                logging.debug('white standard RGB: %s', RGB)  ## DEBUG
+                standard_RGB['score'] += RGB[key]
+                standard_RGB[key] = 255 - RGB[key]
+            standard_RGB['score'] = 255 - standard_RGB['score'] / 3
+            logging.debug(f'The deviation from standard RGB values for the time frame {time} seconds, '
+                          f'are: {standard_RGB}')
             # Extract target crop and time
-            target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop", name + ".png")
-            logging.debug('Searching for %s test in %s', name, target_frame)  ## DEBUG
-
+            target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop", test_name + ".png")
+            logging.debug('Searching for %s test in %s', test_name, target_frame)  ## DEBUG
             RGB = extract_colors(target_frame)
-            logging.debug('RGB: %s', RGB)  ## DEBUG
-
+            logging.debug('RGB: %s', RGB)  # DEBUG
             adj_RGB = {}
-            adj_RGB['score'] = RGB['score'] + blank_RGB['score']
-            adj_RGB['R'] = RGB['R'] + blank_RGB['R']
-            adj_RGB['G'] = RGB['G'] + blank_RGB['G']
-            adj_RGB['B'] = RGB['B'] + blank_RGB['B']
-            logging.debug('RGB: %s', adj_RGB)  ## DEBUG
-
-            results.write(name + '_score\t' + str(adj_RGB['score']) + '\n')
-            results.write(name + '_R\t' + str(adj_RGB['R']) + '\n')
-            results.write(name + '_G\t' + str(adj_RGB['G']) + '\n')
-            results.write(name + '_B\t' + str(adj_RGB['B']) + '\n')
-
-        ## Close results file
+            adj_RGB['score'] = RGB['score'] + standard_RGB['score']
+            adj_RGB['R'] = RGB['R'] + standard_RGB['R']
+            adj_RGB['G'] = RGB['G'] + standard_RGB['G']
+            adj_RGB['B'] = RGB['B'] + standard_RGB['B']
+            logging.debug('RGB: %s', adj_RGB)  # DEBUG
+            results.write(test_name + '_score\t' + str(adj_RGB['score']) + '\n')
+            results.write(test_name + '_R\t' + str(adj_RGB['R']) + '\n')
+            results.write(test_name + '_G\t' + str(adj_RGB['G']) + '\n')
+            results.write(test_name + '_B\t' + str(adj_RGB['B']) + '\n')
         results.close()
 
         ## Create combined detection image pdf
@@ -136,12 +142,10 @@ def process_videos(videos,
                                        "PDF", resolution=1000.0, save_all=True,
                                        append_images=detection_images_named[1:]
                                        )
-
         ## Cleanup if required
         if cleanup:
             logging.info('Cleaning up - removing %s', outdir)  ## INFO
             shutil.rmtree(outdir)
-
         logging.info('# Finished. Results in %s', results_file)  ## INFO
 
     logging.info('####')  ## INFO
@@ -196,7 +200,7 @@ def process_videos_and_upload_to_roboflow(videos, model_detector_path, test_anal
     logging.info('####')  ## INFO
 
     ## Times to extract from video - make unique and sort.
-    times = sorted(set([x for x in test_analysis_times]))
+    times = sorted(set([x[1] for x in test_analysis_times]))
 
     ## Process each video.
     for video in videos:

@@ -1,6 +1,8 @@
 import os
 import logging
 import shutil
+import sys
+
 import cv2
 import random
 import colorsys
@@ -29,52 +31,23 @@ def run_detector_on_image(image_path, output_path,
                           conf=1.00,
                           imgsz=640):
     logging.info('Start cropping tests from frame: %s', image_path)  ## INFO
-
+    image_path_split_len = len(image_path.split('\\'))
+    image_name = image_path.split('\\')[image_path_split_len - 1]
     ## Import model
     model = YOLO(model_detector_path)
-
+    # model_names is the set of names the model is trying to detect
+    model_names = model.model_name
     ## Get results from detector
-    model.predict(image_path, {'conf': conf, 'imgsz': imgsz})
-
+    prediction_results = model.predict(task='detect', source=image_path, save=True)
+    prediction_result = prediction_results[0]
     original_image = cv2.imread(image_path)
-
-    # Search for landmark using ML
-    logging.info(' - Using ML to search for landmark objects')  ## INFO
-    logging.debug('In frame: %s', image_path)  ## DEBUG
-    logging.debug('Out prefix: %s', output_path)  ## DEBUG
-    # Check if we found the landmark in the image and extract it coordinates
-    landmark_found, l_xmin, l_ymin, l_xmax, l_ymax = check_landmark(original_image,
-                                                                    model_detector_path, model_names_path, model_names,
-                                                                    model_landmark_bounds,
-                                                                    output_path)
-    if not landmark_found:
-        logging.warning(
-            'Landmark ML (%s: xmin:%s, xmax:%s, ymin:%s, ymax:%s) was outside the expected bounds (xmin:%s, xmax:%s, ymin:%s, ymax:%s). This might mean that the video has an unexpected rotation or that the strip might not be correctly positioned in the holder.',
-            model_landmark_bounds["name"], l_xmin, l_xmax, l_ymin, l_ymax,
-            model_landmark_bounds["xmin"], model_landmark_bounds["xmax"], model_landmark_bounds["ymin"],
-            model_landmark_bounds["ymax"])  # WARNING
-
-    # hold all detection data in one variable
-    bboxes = np.array([[
-        l_xmin + xmin,
-        l_ymin + ymin,
-        l_xmin + xmax,
-        l_ymin + ymax
-    ] for name, time, xmin, xmax, ymin, ymax in model_intervals], dtype=np.float32)
-    times = np.array([time for name, time, xmin, xmax, ymin, ymax in model_intervals], dtype=np.int32)
-    names = np.array([name for name, time, xmin, xmax, ymin, ymax in model_intervals], dtype=str)
-    num_objects = len(names)
-    pred_bbox = {"bboxes": bboxes, "names": names, "times": times, "num_objects": num_objects}
-    logging.debug('pred_bbox: %s', pred_bbox)  ## DEBUG
-
+    num_objects = len(prediction_result.names)
+    pred_bbox = {"bboxes": prediction_result.boxes, "names": prediction_result.names, "num_objects": num_objects}
     # draw colored boxes on image
     logging.info(' - Drawing crops for manual verification')  ## INFO
-    image = draw_bbox(original_image, pred_bbox)
-
-    image = Image.fromarray(image.astype(np.uint8))
-    image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
+    image = cv2.imread(prediction_result.save_dir + '\\' + image_name)
+    logging.info('Getting predicted image from save_dir')
     cv2.imwrite(output_path + '.detection.png', image)
-
     # crop each detection and save it as new image
     crop_path = os.path.join(output_path + '.crop')  # , image_name)
     try:
@@ -82,9 +55,10 @@ def run_detector_on_image(image_path, output_path,
     except FileExistsError:
         pass
     logging.info(' - Cropping images using (landmark) adjusted coords')  ## INFO
-    crop_objects(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), pred_bbox, crop_path)
-
+    # crop_objects(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), pred_bbox, crop_path)
+    crop_objects(original_image, pred_bbox, crop_path)
     logging.info('Done cropping tests from frame')  ## INFO
+    return pred_bbox
 
 
 # Check for landmark in frame. Return True if it is in the correct position (i.e., frame is correctly orientated).
@@ -151,38 +125,47 @@ def check_landmark(frame, model_detector_path, model_names_path, model_names, mo
 # Parameters:
 #	image_filename	image file to get average RGB value for
 def extract_colors(image_filename):
-    pic = imageio.imread(image_filename)
-    R = pic[:, :, 0]
-    G = pic[:, :, 1]
-    B = pic[:, :, 2]
+    logging.debug(f'Extract the color values  for image:{image_filename}')
+    img = cv2.imread(image_filename)
+    B = img[:, :, 0]
+    G = img[:, :, 1]
+    R = img[:, :, 2]
     meanR = np.mean(R)
     meanG = np.mean(G)
     meanB = np.mean(B)
     score = (meanR + meanG + meanB) / 3
-    return ({'score': score, 'R': meanR, 'G': meanG, 'B': meanB})
+    dict = {'score': score, 'R': meanR, 'G': meanG, 'B': meanB}
+    # TODO remove debug logging statement
+    logging.debug(f'Extracted values for the current image:{dict}')
+    return {'score': score, 'R': meanR, 'G': meanG, 'B': meanB}
 
 
+# TODO: add doc string for all methods and also parameter types within the function definition
 # function for cropping each detection and saving as new image
 def crop_objects(img, data, path, crop_offset=0):
     # data: bboxes, names, times, num_objects
+    # list of all bounding boxes
     bboxes = data["bboxes"]
+    # list of all the class names for the model
     names = data["names"]
+    # number of objects detected in the image
     num_objects = data["num_objects"]
-
-    for i in range(num_objects):
-        # get box coords
-        xmin, ymin, xmax, ymax = bboxes[i]
-        logging.debug('Cropping ojbect no:%s at coords xmin:%s, ymin:%s, xmax:%s, ymax:%s', i, xmin, ymin, xmax,
-                      ymax)  ## DEBUG
-
+    logging.info(f'Names:{names}')
+    for bbox in bboxes:
+        # get box coordinates
+        x_min, y_min, x_max, y_max = bbox.xyxy[0]
+        # index of the predicted class, for the current bounding box, within
+        predicted_class_index = bbox.cls[0]
+        # predicted class name for the current bounding box
+        predicted_class_name = names[int(bbox.cls[0])]
+        # DEBUG mode
+        logging.debug(f'Cropping object at coordinates x_min:{x_min}, y_min:{y_min}, x_max:{x_max}, y_max:{y_max}')
         # crop detection from image (take an additional x pixels around all edges; default 0)
-        cropped_img = img[int(ymin) - crop_offset:int(ymax) + crop_offset,
-                      int(xmin) - crop_offset:int(xmax) + crop_offset]
-
+        cropped_img = img[int(y_min) - crop_offset:int(y_max) + crop_offset,
+                      int(x_min) - crop_offset:int(x_max) + crop_offset]
         # construct image name and join it to path for saving crop properly
-        img_name = names[i] + '.png'
+        img_name = predicted_class_name + '.png'
         img_path = os.path.join(path, img_name)
-
         # save image
         cv2.imwrite(img_path, cropped_img)
 
@@ -204,9 +187,10 @@ def draw_bbox(image, data, show_label=True):
     random.seed(None)
 
     for i in range(num_objects):
-        coor = bboxes[i]
+        coor = bboxes[i].xyxy[0]
+        logging.info(f'box:{coor}')
         fontScale = 0.5
-        class_name = names[i]
+        class_name = bboxes[i].cls[0]
         bbox_color = colors[i]
         logging.debug('name:%s; color:%s; coords:%s', class_name, bbox_color, coor)  ## DEBUG
         bbox_thick = int(0.6 * (image_h + image_w) / 600)
@@ -221,6 +205,7 @@ def draw_bbox(image, data, show_label=True):
             cv2.putText(image, bbox_mess, (c1[0], c1[1] - 2), cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
     return image
+
 
 def predict_image_save_boxes(image_path: str, model_path: str, output_text_path: str, roboflow_api_key: str,
                              project_name: str):
@@ -239,7 +224,6 @@ def predict_image_save_boxes(image_path: str, model_path: str, output_text_path:
             logging.error(class_name)
             file.write(
                 f"{cls} {prediction[0].item()} {prediction[1].item()} {prediction[2].item()} {prediction[3].item()}\n")
-    logging.error('Hi')
     rf = Roboflow(api_key=roboflow_api_key)
     project = rf.workspace().project(project_name)
     logging.info(
