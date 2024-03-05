@@ -13,6 +13,7 @@ import imageio as imageio
 from roboflow import Roboflow
 from ultralytics import YOLO
 
+from src.Utilities.RGBValue import RGBValue
 from src.detector import detect_test_strip
 
 
@@ -126,7 +127,11 @@ def check_landmark(frame, model_detector_path, model_names_path, model_names, mo
 #	image_filename	image file to get average RGB value for
 def extract_colors(image_filename):
     logging.debug(f'Extract the color values  for image:{image_filename}')
-    img = cv2.imread(image_filename)
+    try:
+        img = cv2.imread(image_filename)
+    except:
+        logging.error(f'Unable to find the cropped image {image_filename}')
+        return RGBValue(0,0,0,0)
     B = img[:, :, 0]
     G = img[:, :, 1]
     R = img[:, :, 2]
@@ -137,7 +142,7 @@ def extract_colors(image_filename):
     dict = {'score': score, 'R': meanR, 'G': meanG, 'B': meanB}
     # TODO remove debug logging statement
     logging.debug(f'Extracted values for the current image:{dict}')
-    return {'score': score, 'R': meanR, 'G': meanG, 'B': meanB}
+    return RGBValue(meanR,meanG,meanB,score)
 
 
 # TODO: add doc string for all methods and also parameter types within the function definition

@@ -1,13 +1,24 @@
 YOLOV8_models = ['yolov8n', 'yolov8s', 'yolov8m', 'yolov8l', 'yolov8x']
 test_timings = {
-    'TEST-GLUCOSE': 2,
+    'TEST-GLUCOSE': 30,
     'TEST-BILIRUBIN': 30,
     'TEST-KETONE': 40,
-    'TEST-SPECIFIC': 45,
-    'TEST-BLOOD': 3,
+    'TEST-SPECIFIC_GRAVITY': 45,
+    'TEST-BLOOD': 60,
     'TEST-PH': 60,
     'TEST-PROTEIN': 60,
     'TEST-UROBILINOGEN': 60,
     'TEST-NITRITE': 60,
-    'TEST-LEUKOCYTES': 120
+    'TEST-LEUKOCYTES': 119
 }
+csv_headers = ('VideoName', 'TEST-BILIRUBIN-R', 'TEST-BILIRUBIN-G', 'TEST-BILIRUBIN-B', 'TEST-BILIRUBIN-MeanScore',
+               'TEST-BLOOD-R', 'TEST-BLOOD-G', 'TEST-BLOOD-B', 'TEST-BLOOD-MeanScore',
+               'TEST-GLUCOSE-R', 'TEST-GLUCOSE-G', 'TEST-GLUCOSE-B', 'TEST-GLUCOSE-MeanScore',
+               'TEST-KETONE-R', 'TEST-KETONE-G', 'TEST-KETONE-B', 'TEST-KETONE-MeanScore',
+               'TEST-LEUKOCYTES-R', 'TEST-LEUKOCYTES-G', 'TEST-LEUKOCYTES-B', 'TEST-LEUKOCYTES-MeanScore',
+               'TEST-NITRITE-R', 'TEST-NITRITE-G', 'TEST-NITRITE-B', 'TEST-NITRITE-MeanScore',
+               'TEST-PH-R', 'TEST-PH-G', 'TEST-PH-B', 'TEST-PH-MeanScore',
+               'TEST-PROTEIN-R', 'TEST-PROTEIN-G', 'TEST-PROTEIN-B', 'TEST-PROTEIN-MeanScore',
+               'TEST-SPECIFIC_GRAVITY-R', 'TEST-SPECIFIC_GRAVITY-G', 'TEST-SPECIFIC_GRAVITY-B',
+               'TEST-SPECIFIC_GRAVITY-MeanScore',
+               'TEST-UROBILINOGEN-R', 'TEST-UROBILINOGEN-G', 'TEST-UROBILINOGEN-B', 'TEST-UROBILINOGEN-MeanScore')

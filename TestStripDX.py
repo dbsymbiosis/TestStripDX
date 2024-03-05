@@ -276,8 +276,10 @@ def execute_commands():
     # if args.command != 'joinPDFs':
     script_dir = os.path.abspath(os.path.dirname(__file__))
     models_dir = 'models'
-    model_params_path = os.path.join(script_dir, models_dir, args.model + '.py')
-    model_detector_path = os.path.join(script_dir, models_dir, args.model + '.pt')
+    model_detector_path = ''
+    if args.command in ['train','process']:
+        model_params_path = os.path.join(script_dir, models_dir, args.model + '.py')
+        model_detector_path = os.path.join(script_dir, models_dir, args.model + '.pt')
 
     ## Model variables
     ## Import model params

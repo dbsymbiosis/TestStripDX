@@ -6,10 +6,14 @@ import copy as copy
 from moviepy import *
 import moviepy.editor as mpy
 from PIL import Image, ImageDraw
+
+from src.Utilities.Video_Results import Video_Results
 from src.image import *
 
 # To catch warnings from videos that are too short
 import warnings
+
+from src.utils import write_rgb_vals_to_csv
 
 
 # warnings.filterwarnings('error')
@@ -34,7 +38,9 @@ def process_videos(videos,
 
     # Times to extract from video - make unique and sort.
     times = sorted(set([x[1] for x in test_analysis_times]))
+    video_results = {}
 
+    result_csv_file = videos[0]+outdir_suffix + '.result.csv'
     ## Process each video.
     for video in videos:
         logging.info('# Extracting frames from %s', video)  ## INFO
@@ -91,7 +97,8 @@ def process_videos(videos,
         logging.info(f'Generating RGB values for the different categories at the specified time stamps')
         # TODO: should we calculate the RGB values of categories at all time frames
         # Generating RGB for each test crop from the specificed time frame.
-        for test_name,time in test_analysis_times:
+        test_results_by_test_name = {}
+        for test_name, time in test_analysis_times:
             # Extracting the RGB values for the Standard colors.
             # We will be using these standard values to adjust the values for the predicted boxes and reduce the affect
             # of lightning
@@ -107,9 +114,10 @@ def process_videos(videos,
                                             standards[key] + ".png")
                 logging.debug('Searching for %s test in %s', standards[key], target_frame)  ## DEBUG
                 RGB = extract_colors(target_frame)
+                rgb_vals = RGB.rgbvals()
                 logging.debug('white standard RGB: %s', RGB)  ## DEBUG
-                standard_RGB['score'] += RGB[key]
-                standard_RGB[key] = 255 - RGB[key]
+                standard_RGB['score'] += rgb_vals[key]
+                standard_RGB[key] = 255 - rgb_vals[key]
             standard_RGB['score'] = 255 - standard_RGB['score'] / 3
             logging.debug(f'The deviation from standard RGB values for the time frame {time} seconds, '
                           f'are: {standard_RGB}')
@@ -118,17 +126,18 @@ def process_videos(videos,
             logging.debug('Searching for %s test in %s', test_name, target_frame)  ## DEBUG
             RGB = extract_colors(target_frame)
             logging.debug('RGB: %s', RGB)  # DEBUG
-            adj_RGB = {}
-            adj_RGB['score'] = RGB['score'] + standard_RGB['score']
-            adj_RGB['R'] = RGB['R'] + standard_RGB['R']
-            adj_RGB['G'] = RGB['G'] + standard_RGB['G']
-            adj_RGB['B'] = RGB['B'] + standard_RGB['B']
+            adj_RGB = RGBValue(RGB.r_mean + standard_RGB['R'], RGB.g_mean + standard_RGB['G'],
+                               RGB.b_mean + standard_RGB['B'], RGB.mean_score + standard_RGB['score'])
             logging.debug('RGB: %s', adj_RGB)  # DEBUG
-            results.write(test_name + '_score\t' + str(adj_RGB['score']) + '\n')
-            results.write(test_name + '_R\t' + str(adj_RGB['R']) + '\n')
-            results.write(test_name + '_G\t' + str(adj_RGB['G']) + '\n')
-            results.write(test_name + '_B\t' + str(adj_RGB['B']) + '\n')
+            test_results_by_test_name[test_name] = adj_RGB
+            results.write(test_name + '_score\t' + str(adj_RGB.mean_score) + '\n')
+            results.write(test_name + '_R\t' + str(adj_RGB.r_mean) + '\n')
+            results.write(test_name + '_G\t' + str(adj_RGB.g_mean) + '\n')
+            results.write(test_name + '_B\t' + str(adj_RGB.b_mean) + '\n')
         results.close()
+        video_result = Video_Results()
+        video_result.update_results_from_dictionary(test_results_by_test_name)
+        video_results[video] = video_result
 
         ## Create combined detection image pdf
         logging.debug('detection_images: %s', detection_images)  ## DEBUG
@@ -147,7 +156,7 @@ def process_videos(videos,
             logging.info('Cleaning up - removing %s', outdir)  ## INFO
             shutil.rmtree(outdir)
         logging.info('# Finished. Results in %s', results_file)  ## INFO
-
+    write_rgb_vals_to_csv(result_csv_file,video_results)
     logging.info('####')  ## INFO
     logging.info('#### Finished processing video files')  ## INFO
     logging.info('####')  ## INFO

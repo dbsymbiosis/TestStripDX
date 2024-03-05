@@ -1,11 +1,10 @@
 import sys
 import os
 import logging
-from PyPDF2 import PdfFileMerger
+from PyPDF2 import PdfFileMerger, PdfMerger
 
 
-
-# Combine results from TestStripDX for each strip/video. 
+# Combine results from TestStripDX for each strip/video.
 #
 #	test_files	results files from test videos
 #	outfile		output combined results file
@@ -88,8 +87,7 @@ def joinPDFs(input_PDFs, output_file):
 	logging.info('####') ## INFO
 	logging.info('#### Merging PDF files') ## INFO
 	logging.info('####') ## INFO
-	## See https://stackoverflow.com/questions/3444645/merge-pdf-files
-	merger = PdfFileMerger(strict=False)
+	merger = PdfMerger(strict=False)
 	
 	for pdf in input_PDFs:
 		logging.info('Merging PDF file: %s', pdf) ## INFO
