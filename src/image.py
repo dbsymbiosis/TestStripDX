@@ -13,8 +13,9 @@ import imageio as imageio
 from roboflow import Roboflow
 from ultralytics import YOLO
 
-from src.Utilities.RGBValue import RGBValue
+from src.Utilities.color_space_values import color_space_values
 from src.detector import detect_test_strip
+from src.utils import shift_hue
 
 
 # Crop tests from provided image file
@@ -28,6 +29,7 @@ from src.detector import detect_test_strip
 #	imgsz			image size as scalar or (h, w) list, i.e. (640, 480)
 def run_detector_on_image(image_path, output_path,
                           model_detector_path,
+                          hue_shifts,
                           crop=True,
                           conf=1.00,
                           imgsz=640):
@@ -57,7 +59,7 @@ def run_detector_on_image(image_path, output_path,
         pass
     logging.info(' - Cropping images using (landmark) adjusted coords')  ## INFO
     # crop_objects(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), pred_bbox, crop_path)
-    crop_objects(original_image, pred_bbox, crop_path)
+    crop_objects(original_image, pred_bbox, crop_path,hue_shifts)
     logging.info('Done cropping tests from frame')  ## INFO
     return pred_bbox
 
@@ -128,26 +130,39 @@ def check_landmark(frame, model_detector_path, model_names_path, model_names, mo
 def extract_colors(image_filename):
     logging.debug(f'Extract the color values  for image:{image_filename}')
     try:
-        img = cv2.imread(image_filename)
+        img_bgr = cv2.imread(image_filename)
     except:
         logging.error(f'Unable to find the cropped image {image_filename}')
-        return RGBValue(0,0,0,0)
-    B = img[:, :, 0]
-    G = img[:, :, 1]
-    R = img[:, :, 2]
+        return color_space_values(0, 0, 0, 0)
+    img_bgr.astype('float32')
+    B = img_bgr[:, :, 0]
+    G = img_bgr[:, :, 1]
+    R = img_bgr[:, :, 2]
+    img_lab = cv2.cvtColor(img_bgr,cv2.COLOR_BGR2Lab)
+    l_star, a_star, b_star = cv2.split(img_lab)
+    bgr_normalized = img_bgr / 255.
+    K = 1 - np.max(bgr_normalized, axis=2)
+    C = (1 - bgr_normalized[..., 2] - K) / (1 - K)
+    M = (1 - bgr_normalized[..., 1] - K) / (1 - K)
+    Y = (1 - bgr_normalized[..., 0] - K) / (1 - K)
     meanR = np.mean(R)
     meanG = np.mean(G)
     meanB = np.mean(B)
+    mean_l_star = np.mean(l_star)
+    mean_a_star = np.mean(a_star)
+    mean_b_star = np.mean(b_star)
+    mean_K = np.mean(K)
+    mean_C = np.mean(C)
+    mean_M = np.mean(M)
+    mean_Y = np.mean(Y)
     score = (meanR + meanG + meanB) / 3
-    dict = {'score': score, 'R': meanR, 'G': meanG, 'B': meanB}
-    # TODO remove debug logging statement
-    logging.debug(f'Extracted values for the current image:{dict}')
-    return RGBValue(meanR,meanG,meanB,score)
+    return color_space_values(meanR, meanG, meanB, score, mean_l_star, mean_a_star, mean_b_star,mean_K,mean_C,mean_M,
+                              mean_Y)
 
 
 # TODO: add doc string for all methods and also parameter types within the function definition
 # function for cropping each detection and saving as new image
-def crop_objects(img, data, path, crop_offset=0):
+def crop_objects(img, data, path, hue_shifts, crop_offset=0):
     # data: bboxes, names, times, num_objects
     # list of all bounding boxes
     bboxes = data["bboxes"]
@@ -159,8 +174,6 @@ def crop_objects(img, data, path, crop_offset=0):
     for bbox in bboxes:
         # get box coordinates
         x_min, y_min, x_max, y_max = bbox.xyxy[0]
-        # index of the predicted class, for the current bounding box, within
-        predicted_class_index = bbox.cls[0]
         # predicted class name for the current bounding box
         predicted_class_name = names[int(bbox.cls[0])]
         # DEBUG mode
@@ -173,6 +186,18 @@ def crop_objects(img, data, path, crop_offset=0):
         img_path = os.path.join(path, img_name)
         # save image
         cv2.imwrite(img_path, cropped_img)
+
+        # hue_shifted_img_dir_path = os.path.join(path, hue_shifted_img_dir)
+        # os.mkdir(hue_shifted_img_dir_path)
+        for shift in hue_shifts:
+            hue_shifted_img_dir = '.hueshifted'+str(shift)
+            hue_shifted_dir_path = os.path.join(path,hue_shifted_img_dir)
+            if not os.path.exists(hue_shifted_dir_path):
+                os.mkdir(hue_shifted_dir_path)
+            hue_shifted_image = shift_hue(cropped_img, shift)
+            hue_shifted_img_name = predicted_class_name + '.png'
+            hue_shifted_image_path = os.path.join(hue_shifted_dir_path, hue_shifted_img_name)
+            cv2.imwrite(hue_shifted_image_path, hue_shifted_image)
 
 
 def draw_bbox(image, data, show_label=True):

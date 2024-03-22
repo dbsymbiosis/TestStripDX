@@ -1,3 +1,6 @@
+import logging
+import sys
+
 import cv2
 import random
 import colorsys
@@ -8,7 +11,7 @@ from src.Utilities.Video_Results import Video_Results
 from src.Utilities.constants import csv_headers
 from src.config import cfg
 import csv
-from src.Utilities.RGBValue import RGBValue
+from src.Utilities.color_space_values import color_space_values
 
 
 def load_freeze_layer(model='yolov4', tiny=False):
@@ -361,34 +364,116 @@ def unfreeze_all(model, frozen=False):
             unfreeze_all(l, frozen)
 
 
-def write_rgb_vals_to_csv(csv_file_path, video_results: dict[str, Video_Results]):
+def write_rgb_vals_to_csv(csv_file_path, video_results):
+    logging.info('Video Results')
+    logging.info(video_results)
     with open(csv_file_path, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(csv_headers)
         for video_name in video_results:
             video_result = video_results[video_name]
-            names = video_name.split("\\")
-            name = names[len(names) - 1]
-            writer.writerow(
-                [name,
-                 video_result.bilirubin.r_mean, video_result.bilirubin.g_mean, video_result.bilirubin.b_mean,
-                 video_result.bilirubin.mean_score,
-                 video_result.blood.r_mean, video_result.blood.g_mean, video_result.blood.b_mean,
-                 video_result.blood.mean_score,
-                 video_result.glucose.r_mean, video_result.glucose.g_mean, video_result.glucose.b_mean,
-                 video_result.glucose.mean_score,
-                 video_result.ketone.r_mean, video_result.ketone.g_mean, video_result.ketone.b_mean,
-                 video_result.ketone.mean_score,
-                 video_result.leukocytes.r_mean, video_result.leukocytes.g_mean, video_result.leukocytes.b_mean,
-                 video_result.leukocytes.mean_score,
-                 video_result.nitrite.r_mean, video_result.nitrite.g_mean, video_result.nitrite.b_mean,
-                 video_result.nitrite.mean_score,
-                 video_result.ph.r_mean, video_result.ph.g_mean, video_result.ph.b_mean,
-                 video_result.ph.mean_score,
-                 video_result.protein.r_mean, video_result.protein.g_mean, video_result.protein.b_mean,
-                 video_result.protein.mean_score,
-                 video_result.specific_gravity.r_mean, video_result.specific_gravity.g_mean,
-                 video_result.specific_gravity.b_mean, video_result.specific_gravity.mean_score,
-                 video_result.urobilinogen.r_mean, video_result.urobilinogen.g_mean, video_result.urobilinogen.b_mean,
-                 video_result.urobilinogen.mean_score,
-                 ])
+            row = [video_name]
+            for shift in video_result:
+                shift_result:video_result = video_result[shift]
+                row_shift = [shift_result.bilirubin.red, shift_result.bilirubin.green, shift_result.bilirubin.blue,
+                             shift_result.bilirubin.rgb_score, shift_result.bilirubin.l_star,
+                             shift_result.bilirubin.a_star, shift_result.bilirubin.b_star, shift_result.bilirubin.cyan,
+                             shift_result.bilirubin.yellow, shift_result.bilirubin.magenta,
+                             shift_result.bilirubin.key_black,
+                             shift_result.blood.red, shift_result.blood.green, shift_result.blood.blue,
+                             shift_result.blood.rgb_score, shift_result.blood.l_star,
+                             shift_result.blood.a_star, shift_result.blood.b_star, shift_result.blood.cyan,
+                             shift_result.blood.yellow, shift_result.blood.magenta,
+                             shift_result.blood.key_black,
+                             shift_result.glucose.red, shift_result.glucose.green, shift_result.glucose.blue,
+                             shift_result.glucose.rgb_score, shift_result.glucose.l_star,
+                             shift_result.glucose.a_star, shift_result.glucose.b_star, shift_result.glucose.cyan,
+                             shift_result.glucose.yellow, shift_result.glucose.magenta,
+                             shift_result.glucose.key_black,
+                             shift_result.ketone.red, shift_result.ketone.green, shift_result.ketone.blue,
+                             shift_result.ketone.rgb_score, shift_result.ketone.l_star,
+                             shift_result.ketone.a_star, shift_result.ketone.b_star, shift_result.ketone.cyan,
+                             shift_result.ketone.yellow, shift_result.ketone.magenta,
+                             shift_result.ketone.key_black,
+                             shift_result.leukocytes.red, shift_result.leukocytes.green, shift_result.leukocytes.blue,
+                             shift_result.leukocytes.rgb_score, shift_result.leukocytes.l_star,
+                             shift_result.leukocytes.a_star, shift_result.leukocytes.b_star, shift_result.leukocytes.cyan,
+                             shift_result.leukocytes.yellow, shift_result.leukocytes.magenta,
+                             shift_result.leukocytes.key_black,
+                             shift_result.nitrite.red, shift_result.nitrite.green, shift_result.nitrite.blue,
+                             shift_result.nitrite.rgb_score, shift_result.nitrite.l_star,
+                             shift_result.nitrite.a_star, shift_result.nitrite.b_star, shift_result.nitrite.cyan,
+                             shift_result.nitrite.yellow, shift_result.nitrite.magenta,
+                             shift_result.nitrite.key_black,
+                             shift_result.ph.red, shift_result.ph.green, shift_result.ph.blue,
+                             shift_result.ph.rgb_score, shift_result.ph.l_star,
+                             shift_result.ph.a_star, shift_result.ph.b_star, shift_result.ph.cyan,
+                             shift_result.ph.yellow, shift_result.ph.magenta,
+                             shift_result.ph.key_black,
+                             shift_result.protein.red, shift_result.protein.green, shift_result.protein.blue,
+                             shift_result.protein.rgb_score, shift_result.protein.l_star,
+                             shift_result.protein.a_star, shift_result.protein.b_star, shift_result.protein.cyan,
+                             shift_result.protein.yellow, shift_result.protein.magenta,
+                             shift_result.protein.key_black,
+                             shift_result.specific_gravity.red, shift_result.specific_gravity.green,
+                             shift_result.specific_gravity.blue,
+                             shift_result.specific_gravity.rgb_score, shift_result.specific_gravity.l_star,
+                             shift_result.specific_gravity.a_star, shift_result.specific_gravity.b_star,
+                             shift_result.specific_gravity.cyan,
+                             shift_result.specific_gravity.yellow, shift_result.specific_gravity.magenta,
+                             shift_result.specific_gravity.key_black,
+                             shift_result.urobilinogen.red, shift_result.urobilinogen.green,
+                             shift_result.urobilinogen.blue,
+                             shift_result.urobilinogen.rgb_score, shift_result.urobilinogen.l_star,
+                             shift_result.urobilinogen.a_star, shift_result.urobilinogen.b_star,
+                             shift_result.urobilinogen.cyan,
+                             shift_result.urobilinogen.yellow, shift_result.urobilinogen.magenta,
+                             shift_result.urobilinogen.key_black,]
+                row.extend(row_shift)
+            writer.writerow(row)
+
+
+def update_standard_deviation(standard_values: color_space_values, color_value: color_space_values,
+                              deviation_from_standards: color_space_values):
+    deviation_from_standards.red += standard_values.red - color_value.red
+    deviation_from_standards.blue += standard_values.blue - color_value.blue
+    deviation_from_standards.green += standard_values.green - color_value.green
+    deviation_from_standards.rgb_score += standard_values.rgb_score - color_value.rgb_score
+    deviation_from_standards.l_star += standard_values.l_star - color_value.l_star
+    deviation_from_standards.a_star += standard_values.a_star - color_value.a_star
+    deviation_from_standards.b_star += standard_values.b_star - color_value.b_star
+    deviation_from_standards.cyan += standard_values.cyan - color_value.cyan
+    deviation_from_standards.magenta += standard_values.magenta - color_value.magenta
+    deviation_from_standards.yellow += standard_values.yellow - color_value.yellow
+    deviation_from_standards.key_black += standard_values.key_black - color_value.key_black
+
+
+def shift_hue(image, shift):
+    image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    h = image_hsv[:, :, 0]
+    s = image_hsv[:, :, 1]
+    v = image_hsv[:, :, 2]
+    h_shifted = np.mod(h + shift, 360).astype(np.uint8)
+    hue_shifted_image_hsv = cv2.merge([h_shifted, s, v])
+    hue_shifted_image_bgr = cv2.cvtColor(hue_shifted_image_hsv, cv2.COLOR_HSV2BGR)
+    return hue_shifted_image_bgr
+
+
+def adjust_color_space_values(test_color_space_values: color_space_values,
+                              deviation_from_standards: color_space_values):
+    test_color_space_values.red += deviation_from_standards.red
+    test_color_space_values.green += deviation_from_standards.green
+    test_color_space_values.blue += deviation_from_standards.blue
+    test_color_space_values.rgb_score += deviation_from_standards.rgb_score
+    test_color_space_values.l_star += deviation_from_standards.l_star
+    test_color_space_values.a_star += deviation_from_standards.a_star
+    test_color_space_values.b_star += deviation_from_standards.b_star
+    test_color_space_values.cyan += deviation_from_standards.cyan
+    test_color_space_values.yellow += deviation_from_standards.yellow
+    test_color_space_values.magenta += deviation_from_standards.magenta
+    test_color_space_values.key_black += deviation_from_standards.key_black
+    return test_color_space_values
+
+def get_filename_from_path(path:str):
+    names = path.split('\\')
+    return names[-1]

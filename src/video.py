@@ -8,12 +8,14 @@ import moviepy.editor as mpy
 from PIL import Image, ImageDraw
 
 from src.Utilities.Video_Results import Video_Results
+from src.Utilities.constants import standards_color_space_values
 from src.image import *
 
 # To catch warnings from videos that are too short
 import warnings
 
-from src.utils import write_rgb_vals_to_csv
+from src.utils import write_rgb_vals_to_csv, update_standard_deviation, adjust_color_space_values, \
+    get_filename_from_path
 
 
 # warnings.filterwarnings('error')
@@ -40,7 +42,7 @@ def process_videos(videos,
     times = sorted(set([x[1] for x in test_analysis_times]))
     video_results = {}
 
-    result_csv_file = videos[0]+outdir_suffix + '.result.csv'
+    result_csv_file = videos[0] + outdir_suffix + '.result.csv'
     ## Process each video.
     for video in videos:
         logging.info('# Extracting frames from %s', video)  ## INFO
@@ -77,6 +79,11 @@ def process_videos(videos,
         # Dictionary containing the predictions by the model for different time frames.
         # Key: time, value: prediction results from the model
         predictions_for_frames = {}
+        hue_shifts = []
+        shift = 0
+        while shift < 360:
+            hue_shifts.append(shift)
+            shift += 30
         ## Crop tests from each time frame
         for time in times:
             frame_in = frame_prefix + "." + str(time) + "sec.png"
@@ -88,7 +95,7 @@ def process_videos(videos,
             logging.debug('Out prefix: %s', frame_out)  ## DEBUG
 
             prediction = run_detector_on_image(frame_in, frame_out,
-                                               model_detector_path)
+                                               model_detector_path, hue_shifts)
             predictions_for_frames[str(time)] = prediction
 
         # sys.exit(0)
@@ -98,46 +105,63 @@ def process_videos(videos,
         # TODO: should we calculate the RGB values of categories at all time frames
         # Generating RGB for each test crop from the specificed time frame.
         test_results_by_test_name = {}
-        for test_name, time in test_analysis_times:
+        video_name = get_filename_from_path(video)
+        logging.info(f'Hue shifts:{hue_shifts}')
+        for hue_shift in hue_shifts:
             # Extracting the RGB values for the Standard colors.
             # We will be using these standard values to adjust the values for the predicted boxes and reduce the affect
             # of lightning
-            prediction_for_time_frame = predictions_for_frames[str(time)]
-            standards = {'R': 'Standard-Red', 'G': 'Standard-Green', 'B': 'Standard-Blue'}
-            standard_RGB = {}
-            standard_RGB['score'] = 0
-            standard_RGB['R'] = 0
-            standard_RGB['G'] = 0
-            standard_RGB['B'] = 0
-            for key in standards:
-                target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop",
-                                            standards[key] + ".png")
-                logging.debug('Searching for %s test in %s', standards[key], target_frame)  ## DEBUG
-                RGB = extract_colors(target_frame)
-                rgb_vals = RGB.rgbvals()
-                logging.debug('white standard RGB: %s', RGB)  ## DEBUG
-                standard_RGB['score'] += rgb_vals[key]
-                standard_RGB[key] = 255 - rgb_vals[key]
-            standard_RGB['score'] = 255 - standard_RGB['score'] / 3
-            logging.debug(f'The deviation from standard RGB values for the time frame {time} seconds, '
-                          f'are: {standard_RGB}')
-            # Extract target crop and time
-            target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop", test_name + ".png")
-            logging.debug('Searching for %s test in %s', test_name, target_frame)  ## DEBUG
-            RGB = extract_colors(target_frame)
-            logging.debug('RGB: %s', RGB)  # DEBUG
-            adj_RGB = RGBValue(RGB.r_mean + standard_RGB['R'], RGB.g_mean + standard_RGB['G'],
-                               RGB.b_mean + standard_RGB['B'], RGB.mean_score + standard_RGB['score'])
-            logging.debug('RGB: %s', adj_RGB)  # DEBUG
-            test_results_by_test_name[test_name] = adj_RGB
-            results.write(test_name + '_score\t' + str(adj_RGB.mean_score) + '\n')
-            results.write(test_name + '_R\t' + str(adj_RGB.r_mean) + '\n')
-            results.write(test_name + '_G\t' + str(adj_RGB.g_mean) + '\n')
-            results.write(test_name + '_B\t' + str(adj_RGB.b_mean) + '\n')
+            for test_name, time in test_analysis_times:
+                prediction_for_time_frame = predictions_for_frames[str(time)]
+                standards = {'Red': 'Standard-Red', 'Green': 'Standard-Green', 'Blue': 'Standard-Blue'}
+                deviation_from_standard = color_space_values()
+                for key in standards:
+                    target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop",
+                                                standards[key] + ".png")
+                    logging.debug('Searching for %s test in %s', standards[key], target_frame)  # DEBUG
+                    color_values = extract_colors(target_frame)
+                    update_standard_deviation(standards_color_space_values[key], color_values, deviation_from_standard)
+                logging.debug(f'The deviation from standard RGB values for the time frame {time} seconds, '
+                              f'are: {deviation_from_standard}')
+                # Extract target crop and time
+                target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop", test_name + ".png")
+                logging.debug('Searching for %s test in %s', test_name, target_frame)  ## DEBUG
+                test_color_space_values = extract_colors(target_frame)
+                logging.debug('RGB: %s', test_color_space_values)  # DEBUG
+                adj_test_color_space_values = adjust_color_space_values(test_color_space_values,
+                                                                        deviation_from_standard)
+                logging.debug('Color space values: %s', adj_test_color_space_values)  # DEBUG
+                test_results_by_test_name[test_name] = adj_test_color_space_values
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_RGB_score\t' + str(
+                    adj_test_color_space_values.rgb_score) + '\n')
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_Red_score\t' + str(
+                    adj_test_color_space_values.red) + '\n')
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_Green_score\t' + str(
+                    adj_test_color_space_values.green) + '\n')
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_Blue_score\t' + str(
+                    adj_test_color_space_values.blue) + '\n')
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_Cyan_score\t' + str(
+                    adj_test_color_space_values.cyan) + '\n')
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_Magenta_score\t' + str(
+                    adj_test_color_space_values.magenta) + '\n')
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_Yellow_score\t' + str(
+                    adj_test_color_space_values.yellow) + '\n')
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_Key_Black_score\t' + str(
+                    adj_test_color_space_values.key_black) + '\n')
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_L_star_score\t' + str(
+                    adj_test_color_space_values.l_star) + '\n')
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_a_star_score\t' + str(
+                    adj_test_color_space_values.a_star) + '\n')
+                results.write(test_name + '_hue_shift_' + str(hue_shift) + '_b_star_score\t' + str(
+                    adj_test_color_space_values.b_star) + '\n')
+            video_result = Video_Results()
+            video_result.update_results_from_dictionary(test_results_by_test_name)
+            if video_name not in video_results:
+                logging.info(f'Creating new dictionary for the video:{video_name}')
+                video_results[video_name] = {}
+            logging.info(f'Video results for the video:{video_name} and hue shift:{hue_shift} is {video_result}')
+            video_results[video_name]['_hue_shift_' + str(hue_shift)] = video_result
         results.close()
-        video_result = Video_Results()
-        video_result.update_results_from_dictionary(test_results_by_test_name)
-        video_results[video] = video_result
 
         ## Create combined detection image pdf
         logging.debug('detection_images: %s', detection_images)  ## DEBUG
@@ -149,14 +173,13 @@ def process_videos(videos,
             detection_images_named.append(img)
         detection_images_named[0].save(detection_pdf_path,
                                        "PDF", resolution=1000.0, save_all=True,
-                                       append_images=detection_images_named[1:]
-                                       )
+                                       append_images=detection_images_named[1:])
         ## Cleanup if required
         if cleanup:
             logging.info('Cleaning up - removing %s', outdir)  ## INFO
             shutil.rmtree(outdir)
         logging.info('# Finished. Results in %s', results_file)  ## INFO
-    write_rgb_vals_to_csv(result_csv_file,video_results)
+    write_rgb_vals_to_csv(result_csv_file, video_results)
     logging.info('####')  ## INFO
     logging.info('#### Finished processing video files')  ## INFO
     logging.info('####')  ## INFO
