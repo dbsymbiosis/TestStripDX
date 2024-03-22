@@ -9,7 +9,7 @@ import torch
 
 
 def execute_commands():
-    #TODO: too long function, divide into meaningful functions
+    # TODO: too long function, divide into meaningful functions
     import os
     import logging
     import sys
@@ -218,6 +218,9 @@ def execute_commands():
                                  required=False, action='store_true',
                                  help='Print DEBUG info (default: %(default)s)'
                                  )
+    parser_joinPDFs.add_argument('-d', '--dir', metavar='',
+                                 required=False, type=str,
+                                 help='Path to directory containing the pdf files to be merged')
 
     ##
     ## Parser for command to join PDFs
@@ -277,7 +280,7 @@ def execute_commands():
     script_dir = os.path.abspath(os.path.dirname(__file__))
     models_dir = 'models'
     model_detector_path = ''
-    if args.command in ['train','process']:
+    if args.command in ['train', 'process']:
         model_params_path = os.path.join(script_dir, models_dir, args.model + '.py')
         model_detector_path = os.path.join(script_dir, models_dir, args.model + '.pt')
 
@@ -290,7 +293,7 @@ def execute_commands():
     except:
         logging.error('No test arguments passed')
         # if args.command == #TODO: throw error when tests is required but not given(maybe make tests mandatory in the add_argument command)
-    logging.debug(f'Test Analysis times: {TEST_ANALYSIS_TIMES}') #DEBUG
+    logging.debug(f'Test Analysis times: {TEST_ANALYSIS_TIMES}')  # DEBUG
     ## Extract just the times from list of test names and times.
     times = sorted(set([x for x in TEST_ANALYSIS_TIMES]))
 
@@ -325,7 +328,10 @@ def execute_commands():
     elif args.command == 'combine':
         combine_results(args.in_results, args.out_combined, TEST_ANALYSIS_TIMES)
     elif args.command == 'joinPDFs':
-        joinPDFs(args.in_pdfs, args.out_pdf)
+        if args.dir and args.dir != '':
+            joinPDFs(output_file=args.out_pdf, dir_path=args.dir)
+        else:
+            joinPDFs(output_file=args.out_pdf, input_PDFs=args.in_pdfs)
     elif args.command == 'extract':
         extract(args.in_videos, args.outdir, sorted(set([x[1] for x in TEST_ANALYSIS_TIMES])))
     elif args.command == 'train':
@@ -333,6 +339,7 @@ def execute_commands():
 
     logFormat = "[%(levelname)s]: %(message)s"
     logging.basicConfig(format=logFormat, stream=sys.stderr, level=logging.INFO)
+
 
 if __name__ == '__main__':
     execute_commands()
