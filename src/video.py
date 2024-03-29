@@ -119,17 +119,19 @@ def process_videos(videos,
                     target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop",
                                                 standards[key] + ".png")
                     logging.debug('Searching for %s test in %s', standards[key], target_frame)  # DEBUG
-                    color_values = extract_colors(target_frame)
+                    color_values,_ = extract_colors(target_frame)
                     update_standard_deviation(standards_color_space_values[key], color_values, deviation_from_standard)
                 logging.debug(f'The deviation from standard RGB values for the time frame {time} seconds, '
                               f'are: {deviation_from_standard}')
                 # Extract target crop and time
                 target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop", test_name + ".png")
                 logging.debug('Searching for %s test in %s', test_name, target_frame)  ## DEBUG
-                test_color_space_values = extract_colors(target_frame)
+                test_color_space_values, is_prediction_available = extract_colors(target_frame)
                 logging.debug('RGB: %s', test_color_space_values)  # DEBUG
-                adj_test_color_space_values = adjust_color_space_values(test_color_space_values,
-                                                                        deviation_from_standard)
+                adj_test_color_space_values = test_color_space_values
+                if is_prediction_available:
+                    adj_test_color_space_values = adjust_color_space_values(test_color_space_values,
+                                                                            deviation_from_standard)
                 logging.debug('Color space values: %s', adj_test_color_space_values)  # DEBUG
                 test_results_by_test_name[test_name] = adj_test_color_space_values
                 results.write(test_name + '_hue_shift_' + str(hue_shift) + '_RGB_score\t' + str(

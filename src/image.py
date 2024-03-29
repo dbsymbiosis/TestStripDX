@@ -59,7 +59,7 @@ def run_detector_on_image(image_path, output_path,
         pass
     logging.info(' - Cropping images using (landmark) adjusted coords')  ## INFO
     # crop_objects(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB), pred_bbox, crop_path)
-    crop_objects(original_image, pred_bbox, crop_path,hue_shifts)
+    crop_objects(original_image, pred_bbox, crop_path, hue_shifts)
     logging.info('Done cropping tests from frame')  ## INFO
     return pred_bbox
 
@@ -133,12 +133,12 @@ def extract_colors(image_filename):
         img_bgr = cv2.imread(image_filename)
     except:
         logging.error(f'Unable to find the cropped image {image_filename}')
-        return color_space_values(0, 0, 0, 0)
+        return color_space_values(0, 0, 0, 0), False
     img_bgr.astype('float32')
     B = img_bgr[:, :, 0]
     G = img_bgr[:, :, 1]
     R = img_bgr[:, :, 2]
-    img_lab = cv2.cvtColor(img_bgr,cv2.COLOR_BGR2Lab)
+    img_lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2Lab)
     l_star, a_star, b_star = cv2.split(img_lab)
     bgr_normalized = img_bgr / 255.
     K = 1 - np.max(bgr_normalized, axis=2)
@@ -156,8 +156,8 @@ def extract_colors(image_filename):
     mean_M = np.mean(M)
     mean_Y = np.mean(Y)
     score = (meanR + meanG + meanB) / 3
-    return color_space_values(meanR, meanG, meanB, score, mean_l_star, mean_a_star, mean_b_star,mean_K,mean_C,mean_M,
-                              mean_Y)
+    return color_space_values(meanR, meanG, meanB, score, mean_l_star, mean_a_star, mean_b_star, mean_K, mean_C, mean_M,
+                              mean_Y), True
 
 
 # TODO: add doc string for all methods and also parameter types within the function definition
@@ -190,8 +190,8 @@ def crop_objects(img, data, path, hue_shifts, crop_offset=0):
         # hue_shifted_img_dir_path = os.path.join(path, hue_shifted_img_dir)
         # os.mkdir(hue_shifted_img_dir_path)
         for shift in hue_shifts:
-            hue_shifted_img_dir = '.hueshifted'+str(shift)
-            hue_shifted_dir_path = os.path.join(path,hue_shifted_img_dir)
+            hue_shifted_img_dir = '.hueshifted' + str(shift)
+            hue_shifted_dir_path = os.path.join(path, hue_shifted_img_dir)
             if not os.path.exists(hue_shifted_dir_path):
                 os.mkdir(hue_shifted_dir_path)
             hue_shifted_image = shift_hue(cropped_img, shift)

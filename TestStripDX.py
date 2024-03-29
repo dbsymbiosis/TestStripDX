@@ -7,6 +7,8 @@ import logging
 import subprocess
 import torch
 
+from src.graph import gen_save_group_chart_from_csv
+
 
 def execute_commands():
     # TODO: too long function, divide into meaningful functions
@@ -257,6 +259,43 @@ def execute_commands():
                                        help='Print DEBUG info (default: %(default)s)'
                                        )
     ##
+    # Parser for command to join PDFs
+    ##
+    GENERATE_GRAPHS_FROM_CSV = '''
+
+        Extract data from a csv file based on the column names given, and generate a grouped bar graph using the
+        extracted data.
+        '''
+    parser_gen_graph = subparsers.add_parser('gen_graph',
+                                             help='Generate graph from a csv file',
+                                             description=GENERATE_GRAPHS_FROM_CSV,
+                                             formatter_class=RawTextHelpFormatter
+                                             )
+    parser_gen_graph.add_argument('-p', '--path',
+                                  required=True, type=str, default='Results.csv',
+                                  help='Path to the csv file'
+                                  )
+    parser_gen_graph.add_argument('-x', '--x_label',
+                                  required=True, type=str, default='Video-Name',
+                                  help='Name of the column used for x axis'
+                                  )
+    parser_gen_graph.add_argument('-y', '--y_labels',
+                                  required=True, type=str, default='TEST-BILIRUBIN-Red.shift0', nargs='+',
+                                  help='List of names of columns used for generating bars within the graph'
+                                  )
+    parser_gen_graph.add_argument('-o', '--output-dir', required=True, type=str,
+                                  help='Path of the directory where you want to save the graph')
+    parser_gen_graph.add_argument('-gh', '--graph_height', required=False, type=int,
+                                  default=16,
+                                  help='Desired height of the saved graph')
+    parser_gen_graph.add_argument('-gw', '--graph_width', required=False, type=int,
+                                  default=24,
+                                  help='Desired width of the saved graph')
+    parser_gen_graph.add_argument('--debug',
+                                  required=False, action='store_true',
+                                  help='Print DEBUG info (default: %(default)s)'
+                                  )
+    ##
     ## Parse all arguments.
     ##
 
@@ -336,6 +375,9 @@ def execute_commands():
         extract(args.in_videos, args.outdir, sorted(set([x[1] for x in TEST_ANALYSIS_TIMES])))
     elif args.command == 'train':
         train(args.apikey, args.workspace, args.project, args.model, args.version, args.epochs, args.tune)
+    elif args.command == 'gen_graph':
+        gen_save_group_chart_from_csv(args.path, args.x_label, args.y_labels, args.output_dir, args.graph_height,
+                                      args.graph_width)
 
     logFormat = "[%(levelname)s]: %(message)s"
     logging.basicConfig(format=logFormat, stream=sys.stderr, level=logging.INFO)
