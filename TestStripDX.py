@@ -7,7 +7,9 @@ import logging
 import subprocess
 import torch
 
+from src.common import get_test_analysis_times
 from src.graph import gen_save_group_chart_from_csv
+from src.video import process_videos
 
 
 def execute_commands():
@@ -96,16 +98,22 @@ def execute_commands():
                                                  help='Process test strip video files',
                                                  description=PROCESS_VIDEOS_DESCRIPTION)
     parser_process_video.add_argument('-i', '--in_videos', metavar='teststrip.mp4',
-                                      required=True, nargs='+', type=str,
+                                      required=False, nargs='+', type=str,
                                       help='Video files to process'
+                                      )
+    parser_process_video.add_argument('-ip', '--in_videos_dir',
+                                      required=False, type=str,default='',
+                                      help='Path to the directory containing the videos to be processed'
                                       )
     parser_process_video.add_argument('-m', '--model', metavar='model_name',
                                       required=False, type=str, default='URS10',
-                                      help='Name of test strip being run. (default: %(default)s). Must have downloaded model files in models/ directory.'
+                                      help='Name of test strip being run. (default: %(default)s). '
+                                           'Must have downloaded model files in models/ directory.'
                                       )
     parser_process_video.add_argument('-t', '--tests', metavar='tests', nargs='*',
                                       required=False, type=str, default=[],
-                                      help='List of the tests to be run within the video. Provide the test names with spaces. Eg: -tests Glucose Blood'
+                                      help='List of the tests to be run within the video. '
+                                           'Provide the test names with spaces. Eg: -tests Glucose Blood'
                                       )
     parser_process_video.add_argument('-s', '--suffix', metavar='TestStripDX',
                                       required=False, type=str, default='.TestStripDX',
@@ -360,7 +368,7 @@ def execute_commands():
         process_videos(args.in_videos,
                        model_detector_path,
                        times,  # Timings based on the tests input from the command line argument
-                       args.cleanup, args.suffix)
+                       args.cleanup, args.suffix,in_vid_dir=args.in_videos_dir)
     if args.command == 'predict_and_upload_to_roboflow':
         process_videos_and_upload_to_roboflow(args.in_videos, model_detector_path, times,
                                               args.suffix, args.apikey, args.project, args.output_text_path)
@@ -378,7 +386,6 @@ def execute_commands():
     elif args.command == 'gen_graph':
         gen_save_group_chart_from_csv(args.path, args.x_label, args.y_labels, args.output_dir, args.graph_height,
                                       args.graph_width)
-
     logFormat = "[%(levelname)s]: %(message)s"
     logging.basicConfig(format=logFormat, stream=sys.stderr, level=logging.INFO)
 

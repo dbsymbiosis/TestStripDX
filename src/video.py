@@ -1,6 +1,8 @@
 import sys
 import os
 import logging
+from glob import glob
+
 import numpy as np
 import copy as copy
 from moviepy import *
@@ -33,10 +35,20 @@ from src.utils import write_rgb_vals_to_csv, update_standard_deviation, adjust_c
 def process_videos(videos,
                    model_detector_path,
                    test_analysis_times,
-                   cleanup, outdir_suffix, outdir_overwrite=True):
+                   cleanup, outdir_suffix, outdir_overwrite=True, in_vid_dir = ''):
     logging.info('####')  ## INFO
     logging.info('#### Processing video files')  ## INFO
     logging.info('####')  ## INFO
+    if videos == None:
+        if in_vid_dir and in_vid_dir != '':
+            if os.path.exists(in_vid_dir):
+                videos = glob(os.path.join(in_vid_dir, "*.{}".format('mp4')))
+            else:
+                logging.error('Path to the directory containing the videos is incorrect')
+                sys.exit(0)
+        else:
+            logging.error('Please input path to the videos or directory containing the videos')
+            sys.exit(1)
 
     # Times to extract from video - make unique and sort.
     times = sorted(set([x[1] for x in test_analysis_times]))
@@ -46,7 +58,6 @@ def process_videos(videos,
     ## Process each video.
     for video in videos:
         logging.info('# Extracting frames from %s', video)  ## INFO
-
         ## Envs
         outdir = video + outdir_suffix
         results_file = outdir + '.results.txt'
@@ -112,11 +123,13 @@ def process_videos(videos,
             # We will be using these standard values to adjust the values for the predicted boxes and reduce the affect
             # of lightning
             for test_name, time in test_analysis_times:
+                frame_prefix_for_time_hue = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop")
+                frame_prefix_for_time_hue = os.path.join(frame_prefix_for_time_hue, ".hueshifted"+str(hue_shift))
                 prediction_for_time_frame = predictions_for_frames[str(time)]
                 standards = {'Red': 'Standard-Red', 'Green': 'Standard-Green', 'Blue': 'Standard-Blue'}
                 deviation_from_standard = color_space_values()
                 for key in standards:
-                    target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop",
+                    target_frame = os.path.join(frame_prefix_for_time_hue,
                                                 standards[key] + ".png")
                     logging.debug('Searching for %s test in %s', standards[key], target_frame)  # DEBUG
                     color_values,_ = extract_colors(target_frame)
@@ -124,7 +137,7 @@ def process_videos(videos,
                 logging.debug(f'The deviation from standard RGB values for the time frame {time} seconds, '
                               f'are: {deviation_from_standard}')
                 # Extract target crop and time
-                target_frame = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop", test_name + ".png")
+                target_frame = os.path.join(frame_prefix_for_time_hue, test_name + ".png")
                 logging.debug('Searching for %s test in %s', test_name, target_frame)  ## DEBUG
                 test_color_space_values, is_prediction_available = extract_colors(target_frame)
                 logging.debug('RGB: %s', test_color_space_values)  # DEBUG
