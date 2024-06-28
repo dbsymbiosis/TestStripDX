@@ -15,7 +15,7 @@ def device() -> str:
 
 
 def train(api_key: str, workspace_name: str, project_name: str, model_type: str, version: int, num_of_epochs: int = 10,
-          tune: bool = False):
+          tune: bool = False, partial_trained: str = ''):
     if torch.cuda.is_available():
         logging.info(f'GPU is available. Loading the model to GPU...')
         dev = 'cuda:0'
@@ -31,16 +31,20 @@ def train(api_key: str, workspace_name: str, project_name: str, model_type: str,
                       f'yolov8s,yolov8m,yolov8l,yolov8x)')
         sys.exit(1)
     model = YOLO(model_type)
+    if partial_trained != '':
+        logging.info('Partially trained model found, loading it and resuming training.')
+        model = YOLO(partial_trained)
     model = model.to(device)
     datasetloc = dataset.location + '/data.yaml'
     logging.info(f'Dataset location:{datasetloc}')
     if tune:
-        tuning_results = model.tune(task='detect',data=datasetloc, epochs=num_of_epochs, imgsz=640, plots=True, iterations=200)
+        tuning_results = model.tune(task='detect', data=datasetloc, epochs=num_of_epochs, imgsz=640, plots=True,
+                                    iterations=200)
     else:
         training_results = model.train(task='detect', data=datasetloc, epochs=num_of_epochs, imgsz=640, plots=True,
-                                       optimizer='AdamW', lr0=0.00871,lrf=0.01629,momentum= 0.87533,
-                                       weight_decay= 0.00034,warmup_epochs= 3.52483,warmup_momentum= 0.69684,
-                                       box= 8.32671, cls= 0.40148,dfl= 2.23285,hsv_h= 0.01509, hsv_s= 0.6336
-                                       ,hsv_v= 0.35286,degrees= 0.0,translate= 0.08973,scale= 0.59123,shear= 0.0
-                                       ,perspective= 0.0,flipud= 0.0,fliplr= 0.39051,mosaic= 0.90573,mixup= 0.0,
-                                       copy_paste= 0.0,save=True, val=True)
+                                       optimizer='AdamW', lr0=0.00871, lrf=0.01629, momentum=0.87533,
+                                       weight_decay=0.00034, warmup_epochs=3.52483, warmup_momentum=0.69684,
+                                       box=8.32671, cls=0.40148, dfl=2.23285, hsv_h=0.01509, hsv_s=0.6336
+                                       , hsv_v=0.35286, degrees=0.0, translate=0.08973, scale=0.59123, shear=0.0
+                                       , perspective=0.0, flipud=0.0, fliplr=0.39051, mosaic=0.90573, mixup=0.0,
+                                       copy_paste=0.0, save=True, val=True, dropout=0.1)

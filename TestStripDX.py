@@ -78,6 +78,9 @@ def execute_commands():
                                          help='Enable hyperparameter tuning of the model on default set of variables and '
                                               'values')
 
+    parser_train_yolo_model.add_argument('-pt', '--partial_trained',required=False, type=str,
+                                         metavar='',help='Path to the partially trained model to resume training from.')
+
     parser_train_yolo_model.add_argument('-v', '--version', required=True, type=int,
                                          help='Version of the roboflow project to train on')
 
@@ -382,7 +385,7 @@ def execute_commands():
     elif args.command == 'extract':
         extract(args.in_videos, args.outdir, sorted(set([x[1] for x in TEST_ANALYSIS_TIMES])))
     elif args.command == 'train':
-        train(args.apikey, args.workspace, args.project, args.model, args.version, args.epochs, args.tune)
+        train(args.apikey, args.workspace, args.project, args.model, args.version, args.epochs, args.tune, args.partial_trained)
     elif args.command == 'gen_graph':
         gen_save_group_chart_from_csv(args.path, args.x_label, args.y_labels, args.output_dir, args.graph_height,
                                       args.graph_width)
