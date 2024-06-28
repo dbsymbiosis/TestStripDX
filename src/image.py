@@ -8,10 +8,12 @@ import random
 import colorsys
 import re
 import numpy as np
+import torch
 from PIL import Image
 import imageio as imageio
 from roboflow import Roboflow
 from ultralytics import YOLO
+from ultralytics.engine.results import Boxes
 
 from src.Utilities.color_space_values import color_space_values
 from src.detector import detect_test_strip
@@ -41,11 +43,12 @@ def run_detector_on_image(image_path, output_path,
     # model_names is the set of names the model is trying to detect
     model_names = model.model_name
     ## Get results from detector
-    prediction_results = model.predict(task='detect', source=image_path, save=True)
+    prediction_results = model.predict(task='detect', source=image_path, save=True, conf=0.5)
     prediction_result = prediction_results[0]
     original_image = cv2.imread(image_path)
     num_objects = len(prediction_result.names)
-    pred_bbox = {"bboxes": prediction_result.boxes, "names": prediction_result.names, "num_objects": num_objects}
+    pred_bbox = {"bboxes": prediction_result.boxes, "names": prediction_result.names,
+                 "num_objects": num_objects}
     # draw colored boxes on image
     logging.info(' - Drawing crops for manual verification')  ## INFO
     image = cv2.imread(prediction_result.save_dir + '\\' + image_name)
@@ -235,6 +238,41 @@ def draw_bbox(image, data, show_label=True):
             cv2.putText(image, bbox_mess, (c1[0], c1[1] - 2), cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
     return image
+
+
+def remove_redundant_predictions(pred_boxes: Boxes,classes:list[str]):
+    predicted_cls = pred_boxes.cls
+    confidences = pred_boxes.conf
+    predicted_cls = torch.tensor(predicted_cls)
+    _, inv, counts = torch.unique(predicted_cls, dim=0, return_inverse=True, return_counts=True)
+    duplicate_indices = [tuple(torch.where(inv == i)[0].tolist()) for i, c, in enumerate(counts) if counts[i] > 1]
+    indices_to_remove = []
+    for duplicates in duplicate_indices:
+        max_conf_idx = duplicates[np.argmax(confidences[duplicates])]
+        for duplicate in duplicates:
+            if duplicate != max_conf_idx:
+                indices_to_remove.append(duplicate)
+    if len(indices_to_remove) > 0:
+        logging.info('Identified more than 1 bounding box predicted for a single class.')
+        logging.info('Identifying the bounding box with maximum confidence and removing other bboxes predicted for this class')
+        return remove_duplicates(pred_boxes, indices_to_remove)
+    logging.info('No more than 1 bounding box predicted for all the classes.')
+    return pred_boxes
+
+
+def remove_duplicates(pred_bboxes: Boxes, duplicates: list[int]):
+    indices_to_remove = np.array(duplicates)
+    mask = np.ones(len(pred_bboxes.cls), bool)
+    mask[indices_to_remove] = False
+    pred_bboxes.cls = pred_bboxes.cls[mask]
+    pred_bboxes.conf = pred_bboxes.conf[mask]
+    pred_bboxes.xyxy = pred_bboxes.xyxy[mask]
+    pred_bboxes.id = pred_bboxes.id[mask]
+    pred_bboxes.xywh = pred_bboxes.xywh[mask]
+    pred_bboxes.xyxyn = pred_bboxes.xyxyn[mask]
+    pred_bboxes.xywhn = pred_bboxes.xywhn[mask]
+    pred_bboxes.data = pred_bboxes.data[mask]
+    return pred_bboxes
 
 
 def predict_image_save_boxes(image_path: str, model_path: str, output_text_path: str, roboflow_api_key: str,

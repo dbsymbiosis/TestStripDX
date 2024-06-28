@@ -367,6 +367,7 @@ def unfreeze_all(model, frozen=False):
 def write_rgb_vals_to_csv(csv_file_path, video_results):
     logging.info('Video Results')
     logging.info(video_results)
+    logging.info(f'Writing video results to CSV file: {csv_file_path}')
     with open(csv_file_path, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(csv_headers)

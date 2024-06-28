@@ -1,6 +1,7 @@
 import sys
 import os
 import logging
+import time
 from glob import glob
 
 import numpy as np
@@ -57,6 +58,7 @@ def process_videos(videos,
     result_csv_file = videos[0] + outdir_suffix + '.result.csv'
     ## Process each video.
     for video in videos:
+        starting_time = time.time()
         logging.info('# Extracting frames from %s', video)  ## INFO
         ## Envs
         outdir = video + outdir_suffix
@@ -96,18 +98,18 @@ def process_videos(videos,
             hue_shifts.append(shift)
             shift += 30
         ## Crop tests from each time frame
-        for time in times:
-            frame_in = frame_prefix + "." + str(time) + "sec.png"
-            frame_out = frame_prefix + "." + str(time) + "sec.detect"
-            detection_images.append(frame_prefix + "." + str(time) + "sec.detect.detection.png")
+        for frame_time in times:
+            frame_in = frame_prefix + "." + str(frame_time) + "sec.png"
+            frame_out = frame_prefix + "." + str(frame_time) + "sec.detect"
+            detection_images.append(frame_prefix + "." + str(frame_time) + "sec.detect.detection.png")
 
-            logging.info('Searching for tests in time %s seconds image', time)  ## INFO
+            logging.info('Searching for tests in time %s seconds image', frame_time)  ## INFO
             logging.debug('In frame: %s', frame_in)  ## DEBUG
             logging.debug('Out prefix: %s', frame_out)  ## DEBUG
 
             prediction = run_detector_on_image(frame_in, frame_out,
                                                model_detector_path, hue_shifts)
-            predictions_for_frames[str(time)] = prediction
+            predictions_for_frames[str(frame_time)] = prediction
 
         # sys.exit(0)
         ## Open results file
@@ -122,10 +124,10 @@ def process_videos(videos,
             # Extracting the RGB values for the Standard colors.
             # We will be using these standard values to adjust the values for the predicted boxes and reduce the affect
             # of lightning
-            for test_name, time in test_analysis_times:
-                frame_prefix_for_time_hue = os.path.join(frame_prefix + "." + str(time) + "sec.detect.crop")
+            for test_name, frame_time in test_analysis_times:
+                frame_prefix_for_time_hue = os.path.join(frame_prefix + "." + str(frame_time) + "sec.detect.crop")
                 frame_prefix_for_time_hue = os.path.join(frame_prefix_for_time_hue, ".hueshifted"+str(hue_shift))
-                prediction_for_time_frame = predictions_for_frames[str(time)]
+                prediction_for_time_frame = predictions_for_frames[str(frame_time)]
                 standards = {'Red': 'Standard-Red', 'Green': 'Standard-Green', 'Blue': 'Standard-Blue'}
                 deviation_from_standard = color_space_values()
                 for key in standards:
@@ -134,7 +136,7 @@ def process_videos(videos,
                     logging.debug('Searching for %s test in %s', standards[key], target_frame)  # DEBUG
                     color_values,_ = extract_colors(target_frame)
                     update_standard_deviation(standards_color_space_values[key], color_values, deviation_from_standard)
-                logging.debug(f'The deviation from standard RGB values for the time frame {time} seconds, '
+                logging.debug(f'The deviation from standard RGB values for the time frame {frame_time} seconds, '
                               f'are: {deviation_from_standard}')
                 # Extract target crop and time
                 target_frame = os.path.join(frame_prefix_for_time_hue, test_name + ".png")
@@ -194,6 +196,7 @@ def process_videos(videos,
             logging.info('Cleaning up - removing %s', outdir)  ## INFO
             shutil.rmtree(outdir)
         logging.info('# Finished. Results in %s', results_file)  ## INFO
+        logging.info(f'Finished processing video {video_name} in {time.time()-starting_time} seconds')
     write_rgb_vals_to_csv(result_csv_file, video_results)
     logging.info('####')  ## INFO
     logging.info('#### Finished processing video files')  ## INFO
