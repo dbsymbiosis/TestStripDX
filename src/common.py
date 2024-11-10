@@ -82,5 +82,5 @@ def get_test_analysis_times(test_names):
     logging.info(f'Test names: {test_names}')
     if not test_names:
         return times
-    times = [(test_name.upper(),test_timings[test_name.upper()]) for test_name in test_names]
+    times = [(test_name,test_timings[test_name]) for test_name in test_names]
     return times

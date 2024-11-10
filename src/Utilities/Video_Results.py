@@ -24,24 +24,24 @@ class Video_Results:
         self.urobilinogen = urobilinogen
 
     def update_results_from_dictionary(self, test_results_by_test_name: dict[str, color_space_values]):
-        self.nitrite = test_results_by_test_name['TEST-NITRITE'] if 'TEST-NITRITE' in test_results_by_test_name else (
+        self.nitrite = test_results_by_test_name['Test-Nitrite'] if 'Test-Nitrite' in test_results_by_test_name else (
             color_space_values(0, 0, 0, 0))
-        self.ketone = test_results_by_test_name['TEST-KETONE'] if 'TEST-KETONE' in test_results_by_test_name else (
+        self.ketone = test_results_by_test_name['Test-Ketone'] if 'Test-Ketone' in test_results_by_test_name else (
             color_space_values(0, 0, 0, 0))
-        self.glucose = test_results_by_test_name['TEST-GLUCOSE'] if 'TEST-GLUCOSE' in test_results_by_test_name else (
+        self.glucose = test_results_by_test_name['Test-Glucose'] if 'Test-Glucose' in test_results_by_test_name else (
             color_space_values(0, 0, 0, 0))
-        self.blood = test_results_by_test_name['TEST-BLOOD'] if 'TEST-BLOOD' in test_results_by_test_name else (
+        self.blood = test_results_by_test_name['Test-Blood'] if 'Test-Blood' in test_results_by_test_name else (
             color_space_values(0, 0, 0, 0))
-        self.protein = test_results_by_test_name['TEST-PROTEIN'] if 'TEST-PROTEIN' in test_results_by_test_name else (
+        self.protein = test_results_by_test_name['Test-Protein'] if 'Test-Protein' in test_results_by_test_name else (
             color_space_values(0, 0, 0, 0))
-        self.specific_gravity = test_results_by_test_name['TEST-SPECIFIC_GRAVITY'] if ('TEST-SPECIFIC_GRAVITY' in
+        self.specific_gravity = test_results_by_test_name['Test-Specific_Gravity'] if ('Test-Specific_Gravity' in
                                                                                        test_results_by_test_name) else (
             color_space_values(0, 0, 0, 0))
-        self.leukocytes = test_results_by_test_name['TEST-LEUKOCYTES'] if 'TEST-LEUKOCYTES' in test_results_by_test_name else (
+        self.leukocytes = test_results_by_test_name['Test-Leukocytes'] if 'Test-Leukocytes' in test_results_by_test_name else (
             color_space_values(0, 0, 0, 0))
-        self.bilirubin = test_results_by_test_name['TEST-BILIRUBIN'] if 'TEST-BILIRUBIN' in test_results_by_test_name else (
+        self.bilirubin = test_results_by_test_name['Test-Bilirubin'] if 'Test-Bilirubin' in test_results_by_test_name else (
             color_space_values(0, 0, 0, 0))
-        self.ph = test_results_by_test_name['TEST-PH'] if 'TEST-PH' in test_results_by_test_name else (
+        self.ph = test_results_by_test_name['Test-PH'] if 'Test-PH' in test_results_by_test_name else (
             color_space_values(0, 0, 0, 0))
-        self.urobilinogen = test_results_by_test_name['TEST-UROBILINOGEN'] if 'TEST-UROBILINOGEN' in test_results_by_test_name else (
+        self.urobilinogen = test_results_by_test_name['Test-Urobilinogen'] if 'Test-Urobilinogen' in test_results_by_test_name else (
             color_space_values(0, 0, 0, 0))

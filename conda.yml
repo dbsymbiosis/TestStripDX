@@ -7,15 +7,18 @@ channels:
   - nvidia
 dependencies:
   - python
-  - pytorch
-  - torchvision 
-  - pytorch-cuda=11.8 
+  - pytorch=2.5
+  - torchvision=0.20
+  - cpuonly
+  - tensorflow
+#  - pytorch-cuda=11.8 
   - ultralytics
   - matplotlib
   - moviepy
   - pypdf2
-  - opencv
+#  - opencv
   - lxml
   - easydict
   - pillow
-  - roboflow
+#  - pip:
+#    - roboflow

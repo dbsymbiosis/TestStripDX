@@ -2,7 +2,7 @@ import logging
 import sys
 import torch
 
-from roboflow import Roboflow
+#from roboflow import Roboflow
 from ultralytics import YOLO
 
 from src.Utilities.constants import YOLOV8_models

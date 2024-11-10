@@ -20,7 +20,7 @@ def execute_commands():
     from src.merge import joinPDFs
     from src.common import get_test_analysis_times
     from src.video import process_videos
-    from src.video import process_videos_and_upload_to_roboflow
+    #from src.video import process_videos_and_upload_to_roboflow
     from src.merge import combine_results
     from src.extract import extract
     from src.train import train
@@ -330,10 +330,17 @@ def execute_commands():
     script_dir = os.path.abspath(os.path.dirname(__file__))
     models_dir = 'models'
     model_detector_path = ''
-    if args.command in ['train', 'process']:
+    if args.command in ['train', 'process', 'combine', 'predict_and_upload_to_roboflow']:
         model_params_path = os.path.join(script_dir, models_dir, args.model + '.py')
         model_detector_path = os.path.join(script_dir, models_dir, args.model + '.pt')
-
+        
+        ## Check model files exist
+        logging.info('Checking model files (%s/%s.*) exist', models_dir, args.model)  ## INFO
+        for file_path in [model_detector_path]:
+            if not os.path.exists(file_path):
+                logging.error('Model file (%s) does not exist!', file_path)  ## ERROR
+                sys.exit(1)
+    
     ## Model variables
     ## Import model params
     # import model_params_path
@@ -347,18 +354,7 @@ def execute_commands():
     ## Extract just the times from list of test names and times.
     times = sorted(set([x for x in TEST_ANALYSIS_TIMES]))
 
-    if args.command in ['process', 'combine']:
-        ## Check model files exist
-        logging.info('Checking model files (%s/%s.*) exist', models_dir, args.model)  ## INFO
-        for file_path in [model_detector_path]:
-            if not os.path.exists(file_path):
-                logging.error('Model file (%s) does not exist!', file_path)  ## ERROR
-                sys.exit(1)
-
-        ## Import model params
-        # import model_params_path
-
-    elif args.command in ['extract']:
+    if args.command in ['extract']:
         times = []
         if args.times != None:
             times = args.times

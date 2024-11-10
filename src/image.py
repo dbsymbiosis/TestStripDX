@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from PIL import Image
 import imageio as imageio
-from roboflow import Roboflow
+#from roboflow import Roboflow
 from ultralytics import YOLO
 from ultralytics.engine.results import Boxes
 
@@ -33,17 +33,17 @@ def run_detector_on_image(image_path, output_path,
                           model_detector_path,
                           hue_shifts,
                           crop=True,
-                          conf=1.00,
+                          conf=0.5,
                           imgsz=640):
     logging.info('Start cropping tests from frame: %s', image_path)  ## INFO
-    image_path_split_len = len(image_path.split('\\'))
-    image_name = image_path.split('\\')[image_path_split_len - 1]
+    image_path_split_len = len(image_path.split('/'))
+    image_name = image_path.split('/')[image_path_split_len - 1]
     ## Import model
     model = YOLO(model_detector_path)
     # model_names is the set of names the model is trying to detect
     model_names = model.model_name
     ## Get results from detector
-    prediction_results = model.predict(task='detect', source=image_path, save=True, conf=0.5)
+    prediction_results = model.predict(task='detect', source=image_path, save=True, conf=conf)
     prediction_result = prediction_results[0]
     original_image = cv2.imread(image_path)
     num_objects = len(prediction_result.names)
@@ -51,7 +51,11 @@ def run_detector_on_image(image_path, output_path,
                  "num_objects": num_objects}
     # draw colored boxes on image
     logging.info(' - Drawing crops for manual verification')  ## INFO
-    image = cv2.imread(prediction_result.save_dir + '\\' + image_name)
+    image = cv2.imread(prediction_result.path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = draw_bbox(image, pred_bbox)
+    image = Image.fromarray(image.astype(np.uint8))
+    image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
     logging.info('Getting predicted image from save_dir')
     cv2.imwrite(output_path + '.detection.png', image)
     # crop each detection and save it as new image
@@ -137,6 +141,10 @@ def extract_colors(image_filename):
     except:
         logging.error(f'Unable to find the cropped image {image_filename}')
         return color_space_values(0, 0, 0, 0), False
+    logging.debug(f'{img_bgr}') # DEBUG
+    if img_bgr is None:
+        logging.error(f'Unable to find the cropped image {image_filename}')
+        return color_space_values(0, 0, 0, 0), False
     img_bgr.astype('float32')
     B = img_bgr[:, :, 0]
     G = img_bgr[:, :, 1]
@@ -208,7 +216,8 @@ def draw_bbox(image, data, show_label=True):
     # data: bboxes, names, times, num_objects
     bboxes = data["bboxes"]
     names = data["names"]
-    num_objects = data["num_objects"]
+    #num_objects = data["num_objects"]
+    num_objects = len(bboxes)
 
     image_h, image_w, _ = image.shape
     hsv_tuples = [(1.0 * x / num_objects, 1., 1.) for x in range(num_objects)]
@@ -218,8 +227,12 @@ def draw_bbox(image, data, show_label=True):
     random.seed(0)
     random.shuffle(colors)
     random.seed(None)
-
+    
+    logging.debug(f'num_objects: {num_objects}') # DEBUG
+    logging.debug(f'names: {names}') # DEBUG
+    logging.debug(f'{bboxes}') # DEBUG
     for i in range(num_objects):
+        logging.debug(f'Running index {i}: {bboxes[i]}') # DEBUG
         coor = bboxes[i].xyxy[0]
         logging.info(f'box:{coor}')
         fontScale = 0.5
@@ -231,7 +244,9 @@ def draw_bbox(image, data, show_label=True):
         cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
 
         if show_label:
-            bbox_mess = '%s' % (class_name)
+            name = names[int(class_name)]
+            logging.debug(f'Label for box: {name}') # DEBUG
+            bbox_mess = f'{name}'
             t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick // 2)[0]
             c3 = (c1[0] + t_size[0], c1[1] - t_size[1] - 3)
             cv2.rectangle(image, c1, c3, bbox_color, -1)  # filled
