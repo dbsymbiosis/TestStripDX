@@ -20,16 +20,14 @@ def execute_commands():
     from src.merge import joinPDFs
     from src.common import get_test_analysis_times
     from src.video import process_videos
-    #from src.video import process_videos_and_upload_to_roboflow
     from src.merge import combine_results
     from src.extract import extract
-    from src.train import train
     ## Get git hash and branch to use as program version
     cwd = os.path.dirname(os.path.realpath(__file__))
     git_branch = subprocess.check_output(['git', 'branch', '--show-current'], cwd=cwd).decode('ascii').strip()
     git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=cwd).decode('ascii').strip()
     __version__ = git_branch + ' ' + git_hash
-
+    
     ##
     ## Pass command line arguments.
     ##
@@ -43,51 +41,7 @@ def execute_commands():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=DESCRIPTION)
     parser.add_argument('-v', '--version', action='version', version=__version__)
     subparsers = parser.add_subparsers(dest='command', required=True)
-
-    ##
-    ## Parser for training a model on a roboflow dataset
-    ##
-    TRAIN_ROBOFLOW_DATASET_DESCRIPTION = '''
     
-    Runs training epochs on a YOLO model mentioned in the command line args and a dataset from 
-    roboflow based on the api_key and project name mentioned in the command line arguments.
-    
-    '''
-
-    parser_train_yolo_model = subparsers.add_parser('train',
-                                                    help='Train YOLO model on a roboflow dataset',
-                                                    description=TRAIN_ROBOFLOW_DATASET_DESCRIPTION)
-
-    parser_train_yolo_model.add_argument('-m', '--model',
-                                         required=True, type=str,
-                                         help='Type of base YOLO model to be trained. Example: yolov8n, yolov8s')
-
-    parser_train_yolo_model.add_argument('-ak', '--apikey', required=True, type=str,
-                                         help='Api_key to access the roboflow dataset')
-
-    parser_train_yolo_model.add_argument('-w', '--workspace', required=True, type=str,
-                                         help='Workspace which contains the dataset on roboflow')
-
-    parser_train_yolo_model.add_argument('-p', '--project', required=True, type=str,
-                                         help='Name of the project on Roboflow')
-
-    parser_train_yolo_model.add_argument('-e', '--epochs', required=False, type=int,
-                                         metavar='10', help='Number of training epochs to run')
-
-    parser_train_yolo_model.add_argument('-t', '--tune', required=False, action='store_true',
-                                         help='Enable hyperparameter tuning of the model on default set of variables and '
-                                              'values')
-
-    parser_train_yolo_model.add_argument('-pt', '--partial_trained',required=False, type=str,
-                                         metavar='',help='Path to the partially trained model to resume training from.')
-
-    parser_train_yolo_model.add_argument('-v', '--version', required=True, type=int,
-                                         help='Version of the roboflow project to train on')
-
-    parser_train_yolo_model.add_argument('--debug',
-                                         required=False, action='store_true',
-                                         help='Print DEBUG info (default: %(default)s)'
-                                         )
     ##
     ## Parser for the processing of the test strip video files
     ##
@@ -130,43 +84,7 @@ def execute_commands():
                                       required=False, action='store_true',
                                       help='Print DEBUG info (default: %(default)s)'
                                       )
-
-    ##
-    ## Parser for predicting frames of the test strip video files and upload these predictions to roboflow project
-    ##
-    PROCESS_VIDEOS_UPLOAD_DESCRIPTION = '''
-    Runs Tensorflow model on each provided video on frames extracted at the specified time points
-    for each test on the strip that we are interested in. Later, the predicted bounding boxes along 
-    with the images are uploaded to roboflow.
-    '''
-    parser_process_video_and_roboflow = subparsers.add_parser('predict_and_upload_to_roboflow',
-                                                              help='Process test strip video files and upload predicted images to roboflow',
-                                                              description=PROCESS_VIDEOS_UPLOAD_DESCRIPTION)
-    parser_process_video_and_roboflow.add_argument('-i', '--in_videos', metavar='teststrip.mp4',
-                                                   required=True, nargs='+', type=str,
-                                                   help='Video files to process'
-                                                   )
-    parser_process_video_and_roboflow.add_argument('-m', '--model', metavar='model_name',
-                                                   required=False, type=str, default='URS10',
-                                                   help='Name of test strip being run. (default: %(default)s). Must have downloaded model files in models/ directory.'
-                                                   )
-    parser_process_video_and_roboflow.add_argument('-s', '--suffix', metavar='TestStripDX',
-                                                   required=False, type=str, default='.TestStripDX',
-                                                   help='Prefix to add to TestStripDX output files (default: %(default)s)'
-                                                   )
-    parser_process_video_and_roboflow.add_argument('-ak', '--apikey',
-                                                   required=True, type=str, default='',
-                                                   help='Api-key to access the roboflow project')
-    parser_process_video_and_roboflow.add_argument('-p', '--project',
-                                                   required=True, type=str, default='',
-                                                   help='Roboflow project name, where the annotations have to be uploaded to')
-    parser_process_video_and_roboflow.add_argument('-o', '--output_text_path', metavar='output_text_path',
-                                                   required=True, type=str,
-                                                   help='Path to the output text file, which the program can use to save bounding boxes data')
-    parser_process_video_and_roboflow.add_argument('--debug',
-                                                   required=False, action='store_true',
-                                                   help='Print DEBUG info (default: %(default)s)'
-                                                   )
+    
     ##
     ## Parser for the combining of the results files into a single output
     ##
@@ -198,7 +116,7 @@ def execute_commands():
                                         required=False, action='store_true',
                                         help='Print DEBUG info (default: %(default)s)'
                                         )
-
+    
     ##
     ## Parser for command to join PDFs
     ##
@@ -234,7 +152,7 @@ def execute_commands():
     parser_joinPDFs.add_argument('-d', '--dir', metavar='',
                                  required=False, type=str,
                                  help='Path to directory containing the pdf files to be merged')
-
+    
     ##
     ## Parser for command to join PDFs
     ##
@@ -243,6 +161,7 @@ def execute_commands():
     Extract frames from a video at key time points.
     
     This function is mostly used for collecting images to train the ML model.
+    
     '''
     parser_extract_frames = subparsers.add_parser('extract',
                                                   help='Extract frames from video',
@@ -269,14 +188,16 @@ def execute_commands():
                                        required=False, action='store_true',
                                        help='Print DEBUG info (default: %(default)s)'
                                        )
+    
     ##
-    # Parser for command to join PDFs
+    ## Parser for command to join PDFs
     ##
     GENERATE_GRAPHS_FROM_CSV = '''
-
-        Extract data from a csv file based on the column names given, and generate a grouped bar graph using the
-        extracted data.
-        '''
+    
+    Extract data from a csv file based on the column names given, and generate a grouped bar graph using the
+    extracted data.
+    
+    '''
     parser_gen_graph = subparsers.add_parser('gen_graph',
                                              help='Generate graph from a csv file',
                                              description=GENERATE_GRAPHS_FROM_CSV,
@@ -306,6 +227,96 @@ def execute_commands():
                                   required=False, action='store_true',
                                   help='Print DEBUG info (default: %(default)s)'
                                   )
+    
+    
+    
+    ##
+    ## Parser for predicting frames of the test strip video files and upload these predictions to roboflow project
+    ##
+    PROCESS_VIDEOS_UPLOAD_DESCRIPTION = '''
+    
+    Runs Tensorflow model on each provided video on frames extracted at the specified time points
+    for each test on the strip that we are interested in. Later, the predicted bounding boxes along 
+    with the images are uploaded to roboflow.
+    
+    '''
+    parser_process_video_and_roboflow = subparsers.add_parser('predict_and_upload_to_roboflow',
+                                                              help='Process test strip video files and upload predicted images to roboflow',
+                                                              description=PROCESS_VIDEOS_UPLOAD_DESCRIPTION
+                                                             )
+    parser_process_video_and_roboflow.add_argument('-i', '--in_videos', metavar='teststrip.mp4',
+                                                   required=True, nargs='+', type=str,
+                                                   help='Video files to process'
+                                                  )
+    parser_process_video_and_roboflow.add_argument('-m', '--model', metavar='model_name',
+                                                   required=False, type=str, default='URS10',
+                                                   help='Name of test strip being run. (default: %(default)s). Must have downloaded model files in models/ directory.'
+                                                  )
+    parser_process_video_and_roboflow.add_argument('-s', '--suffix', metavar='TestStripDX',
+                                                   required=False, type=str, default='.TestStripDX',
+                                                   help='Prefix to add to TestStripDX output files (default: %(default)s)'
+                                                  )
+    parser_process_video_and_roboflow.add_argument('-ak', '--apikey',
+                                                   required=True, type=str, default='',
+                                                   help='Api-key to access the roboflow project'
+                                                  )
+    parser_process_video_and_roboflow.add_argument('-p', '--project',
+                                                   required=True, type=str, default='',
+                                                   help='Roboflow project name, where the annotations have to be uploaded to'
+                                                  )
+    parser_process_video_and_roboflow.add_argument('-o', '--output_text_path', metavar='output_text_path',
+                                                   required=True, type=str,
+                                                   help='Path to the output text file, which the program can use to save bounding boxes data'
+                                                  )
+    parser_process_video_and_roboflow.add_argument('--debug',
+                                                   required=False, action='store_true',
+                                                   help='Print DEBUG info (default: %(default)s)'
+                                                   )
+    
+    ##
+    ## Parser for training a model on a roboflow dataset
+    ##
+    TRAIN_ROBOFLOW_DATASET_DESCRIPTION = '''
+    
+    Runs training epochs on a YOLO model mentioned in the command line args and a dataset from 
+    roboflow based on the api_key and project name mentioned in the command line arguments.
+    
+    '''
+    parser_train_yolo_model = subparsers.add_parser('train',
+                                                    help='Train YOLO model on a roboflow dataset',
+                                                    description=TRAIN_ROBOFLOW_DATASET_DESCRIPTION)
+    parser_train_yolo_model.add_argument('-m', '--model',
+                                         required=True, type=str,
+                                         help='Type of base YOLO model to be trained. Example: yolov8n, yolov8s'
+                                        )
+    parser_train_yolo_model.add_argument('-ak', '--apikey', required=True, type=str,
+                                         help='Api_key to access the roboflow dataset'
+                                        )
+    parser_train_yolo_model.add_argument('-w', '--workspace', required=True, type=str,
+                                         help='Workspace which contains the dataset on roboflow'
+                                        )
+    parser_train_yolo_model.add_argument('-p', '--project', required=True, type=str,
+                                         help='Name of the project on Roboflow'
+                                        )
+    parser_train_yolo_model.add_argument('-e', '--epochs', required=False, type=int,
+                                         metavar='10', help='Number of training epochs to run'
+                                        )
+    parser_train_yolo_model.add_argument('-t', '--tune', required=False, action='store_true',
+                                         help='Enable hyperparameter tuning of the model on default set of variables and values'
+                                        )
+    parser_train_yolo_model.add_argument('-pt', '--partial_trained',required=False, type=str,
+                                         metavar='',help='Path to the partially trained model to resume training from.'
+                                        )
+    parser_train_yolo_model.add_argument('-v', '--version', required=True, type=int,
+                                         help='Version of the roboflow project to train on'
+                                        )
+    parser_train_yolo_model.add_argument('--debug',
+                                         required=False, action='store_true',
+                                         help='Print DEBUG info (default: %(default)s)'
+                                        )
+    
+    
+    
     ##
     ## Parse all arguments.
     ##
@@ -331,7 +342,6 @@ def execute_commands():
     models_dir = 'models'
     model_detector_path = ''
     if args.command in ['train', 'process', 'combine', 'predict_and_upload_to_roboflow']:
-        model_params_path = os.path.join(script_dir, models_dir, args.model + '.py')
         model_detector_path = os.path.join(script_dir, models_dir, args.model + '.pt')
         
         ## Check model files exist
@@ -343,7 +353,6 @@ def execute_commands():
     
     ## Model variables
     ## Import model params
-    # import model_params_path
     TEST_ANALYSIS_TIMES = []
     try:
         TEST_ANALYSIS_TIMES = get_test_analysis_times(args.tests)
@@ -368,9 +377,6 @@ def execute_commands():
                        model_detector_path,
                        times,  # Timings based on the tests input from the command line argument
                        args.cleanup, args.suffix,in_vid_dir=args.in_videos_dir)
-    if args.command == 'predict_and_upload_to_roboflow':
-        process_videos_and_upload_to_roboflow(args.in_videos, model_detector_path, times,
-                                              args.suffix, args.apikey, args.project, args.output_text_path)
     elif args.command == 'combine':
         combine_results(args.in_results, args.out_combined, TEST_ANALYSIS_TIMES)
     elif args.command == 'joinPDFs':
@@ -385,6 +391,18 @@ def execute_commands():
     elif args.command == 'gen_graph':
         gen_save_group_chart_from_csv(args.path, args.x_label, args.y_labels, args.output_dir, args.graph_height,
                                       args.graph_width)
+    
+    # Roboflow upload and training
+    elif args.command == 'predict_and_upload_to_roboflow':
+        from src.upload_to_roboflow import process_videos_and_upload_to_roboflow
+        process_videos_and_upload_to_roboflow(args.in_videos, model_detector_path, times,
+                                              args.suffix, args.apikey, args.project, args.output_text_path)
+    elif args.command == 'train':
+        from src.train import train
+        train(args.apikey, args.workspace, args.project, args.model, args.version, args.epochs, args.tune, args.partial_trained)
+
+
+
     logFormat = "[%(levelname)s]: %(message)s"
     logging.basicConfig(format=logFormat, stream=sys.stderr, level=logging.INFO)
 

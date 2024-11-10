@@ -243,36 +243,3 @@ def capture_frames_from_video(video_filename, out_prefix, seconds):
     warnings.filterwarnings('ignore')
 
 
-def process_videos_and_upload_to_roboflow(videos, model_detector_path, test_analysis_times, outdir_suffix,
-                                          api_key, project_name, output_txt_file_path):
-    logging.info('####')  ## INFO
-    logging.info('#### Processing video files')  ## INFO
-    logging.info('####')  ## INFO
-
-    ## Times to extract from video - make unique and sort.
-    times = sorted(set([x[1] for x in test_analysis_times]))
-
-    ## Process each video.
-    for video in videos:
-        logging.info('# Extracting frames from %s', video)  ## INFO
-
-        ## Envs
-        outdir = video + outdir_suffix
-        os.mkdir(outdir)
-        frame_prefix = os.path.join(outdir, "frame")
-
-        ## Check if video file exists.
-        if not os.path.exists(video):
-            logging.error('Video file %s does not exists!', video)  ## ERROR
-            sys.exit(1)
-
-        ## Extract frame from a specific timestamp in a video.
-        capture_frames_from_video(video, frame_prefix, times)
-
-        ## Crop tests from each time frame
-        for time in times:
-            frame_in = frame_prefix + "." + str(time) + "sec.png"
-            logging.info('Searching for tests in time %s seconds image', time)  ## INFO
-            logging.debug('In frame: %s', frame_in)  ## DEBUG
-
-            predict_image_save_boxes(frame_in, model_detector_path, output_txt_file_path, api_key, project_name)

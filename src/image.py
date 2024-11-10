@@ -11,7 +11,6 @@ import numpy as np
 import torch
 from PIL import Image
 import imageio as imageio
-#from roboflow import Roboflow
 from ultralytics import YOLO
 from ultralytics.engine.results import Boxes
 
@@ -290,24 +289,4 @@ def remove_duplicates(pred_bboxes: Boxes, duplicates: list[int]):
     return pred_bboxes
 
 
-def predict_image_save_boxes(image_path: str, model_path: str, output_text_path: str, roboflow_api_key: str,
-                             project_name: str):
-    logging.info(model_path)
-    model = YOLO(model_path)
-    logging.info('Hi')
-    predictions = model.predict(source=image_path, stream=False)
-    logging.info(f'output dir: {output_text_path}')
-    open(output_text_path, 'w').close()
-    with open(output_text_path, '+w') as file:
-        logging.error(f'Opened file: {output_text_path}')
-        for idx, prediction in enumerate(predictions[0].boxes.xywhn):  # change final attribute to desired box format
-            cls = int(predictions[0].boxes.cls[idx].item())
-            # path = predictions[0].path
-            class_name = model.names[cls]
-            logging.error(class_name)
-            file.write(
-                f"{cls} {prediction[0].item()} {prediction[1].item()} {prediction[2].item()} {prediction[3].item()}\n")
-    rf = Roboflow(api_key=roboflow_api_key)
-    project = rf.workspace().project(project_name)
-    logging.info(
-        project.upload(image_path=image_path, annotation_path=output_text_path, split='train'))
+
