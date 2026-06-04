@@ -44,6 +44,16 @@ def run_detector_on_image(image_path, output_path,
     ## Get results from detector
     prediction_results = model.predict(task='detect', source=image_path, save=True, conf=conf)
     prediction_result = prediction_results[0]
+    
+    print("")
+    print("")
+    print("")
+    print("")
+    print("")
+    print(prediction_result.boxes)
+    b = remove_redundant_predictions(prediction_result.boxes)
+    print(b)
+    
     original_image = cv2.imread(image_path)
     num_objects = len(prediction_result.names)
     pred_bbox = {"bboxes": prediction_result.boxes, "names": prediction_result.names,
@@ -68,65 +78,6 @@ def run_detector_on_image(image_path, output_path,
     crop_objects(original_image, pred_bbox, crop_path, hue_shifts)
     logging.info('Done cropping tests from frame')  ## INFO
     return pred_bbox
-
-
-# Check for landmark in frame. Return True if it is in the correct position (i.e., frame is correctly orientated).
-#
-# Parameters:
-#	frame			frame to check
-#	model_detector_path	path to Tensorflow detector file (e.g., 'models/teststrips.detector')
-#	model_names_path	path to names file (e.g., 'models/teststrips.names')
-#	model_names		names of model objects
-#	model_landmark_bounds	dict of landmark features to check for in image
-#	output_path		render ML pred to image. Useful for debugging (if None, dont render)
-#
-# Returns:
-#	found_landmark 				either True (Landmark was found in correct position) or False (Landmark wasnt found in correct position - or wasnt found at all)
-#	l_xmin, l_ymin, l_xmax, l_ymax		bounds of landmark from ML prediction
-def check_landmark(frame, model_detector_path, model_names_path, model_names, model_landmark_bounds, output_path=None):
-    # Run ML to predict landmark
-    pred_bbox = detect_test_strip(model_detector_path, model_names_path, model_names, frame)
-    bboxes = pred_bbox["bboxes"]
-    names = pred_bbox["names"]
-    num_objects = pred_bbox["num_objects"]
-    l_xmin, l_ymin, l_xmax, l_ymax = 460, 100, 530, 140
-
-    # draw colored boxes on image for ML detections (used for debugging)
-    if output_path is not None:
-        ML_frame = draw_bbox(frame, pred_bbox)
-        ML_frame = Image.fromarray(ML_frame.astype(np.uint8))
-        ML_frame = cv2.cvtColor(np.array(ML_frame), cv2.COLOR_BGR2RGB)
-        cv2.imwrite(output_path + '.ML_detection.png', ML_frame)
-
-    # Check each of the predicted features and check if they are the one we want.
-    for i in range(num_objects):
-        if names[i] == model_landmark_bounds["name"]:
-            logging.debug('Landmark found')  ## DEBUG
-            l_xmin, l_ymin, l_xmax, l_ymax = bboxes[i]
-            break
-    else:
-        logging.debug(
-            'Failed to find landmark in frame. Falling back to default coords, these are a rought approximation but will likely be wrong. Please double check these results.')  ## DEBUG
-        return (False, l_xmin, l_ymin, l_xmax, l_ymax)
-
-    # Check if landmark is where we expect - return False if its out of place
-    if l_xmin < model_landmark_bounds["xmin"] or \
-            l_xmin > model_landmark_bounds["xmax"] or \
-            l_ymin < model_landmark_bounds["ymin"] or \
-            l_ymin > model_landmark_bounds["ymax"]:
-        logging.debug(
-            'Landmark ML (%s: xmin:%s, xmax:%s, ymin:%s, ymax:%s) was OUT side the expected bounds (xmin:%s, xmax:%s, ymin:%s, ymax:%s).',
-            model_landmark_bounds["name"], l_xmin, l_xmax, l_ymin, l_ymax,
-            model_landmark_bounds["xmin"], model_landmark_bounds["xmax"], model_landmark_bounds["ymin"],
-            model_landmark_bounds["ymax"])  # DEBUG
-        return (False, l_xmin, l_ymin, l_xmax, l_ymax)
-    else:
-        logging.debug(
-            'Landmark ML (%s: xmin:%s, xmax:%s, ymin:%s, ymax:%s) was IN side the expected bounds (xmin:%s, xmax:%s, ymin:%s, ymax:%s).',
-            model_landmark_bounds["name"], l_xmin, l_xmax, l_ymin, l_ymax,
-            model_landmark_bounds["xmin"], model_landmark_bounds["xmax"], model_landmark_bounds["ymin"],
-            model_landmark_bounds["ymax"])  # DEBUG
-        return (True, l_xmin, l_ymin, l_xmax, l_ymax)
 
 
 # Extract mean value of RGB channels combined for a given image
@@ -254,21 +205,25 @@ def draw_bbox(image, data, show_label=True):
     return image
 
 
-def remove_redundant_predictions(pred_boxes: Boxes,classes:list[str]):
+def remove_redundant_predictions(pred_boxes: Boxes):
     predicted_cls = pred_boxes.cls
     confidences = pred_boxes.conf
     predicted_cls = torch.tensor(predicted_cls)
     _, inv, counts = torch.unique(predicted_cls, dim=0, return_inverse=True, return_counts=True)
     duplicate_indices = [tuple(torch.where(inv == i)[0].tolist()) for i, c, in enumerate(counts) if counts[i] > 1]
+    print(duplicate_indices)
     indices_to_remove = []
     for duplicates in duplicate_indices:
-        max_conf_idx = duplicates[np.argmax(confidences[duplicates])]
+        print(duplicates)
+        max_conf_idx = duplicates[np.argmax([confidences[i] for i in duplicates])]
+        print(max_conf_idx)
         for duplicate in duplicates:
             if duplicate != max_conf_idx:
                 indices_to_remove.append(duplicate)
     if len(indices_to_remove) > 0:
         logging.info('Identified more than 1 bounding box predicted for a single class.')
         logging.info('Identifying the bounding box with maximum confidence and removing other bboxes predicted for this class')
+        logging.debug(f'Removing indices: {indices_to_remove}')
         return remove_duplicates(pred_boxes, indices_to_remove)
     logging.info('No more than 1 bounding box predicted for all the classes.')
     return pred_boxes
@@ -278,15 +233,31 @@ def remove_duplicates(pred_bboxes: Boxes, duplicates: list[int]):
     indices_to_remove = np.array(duplicates)
     mask = np.ones(len(pred_bboxes.cls), bool)
     mask[indices_to_remove] = False
-    pred_bboxes.cls = pred_bboxes.cls[mask]
-    pred_bboxes.conf = pred_bboxes.conf[mask]
-    pred_bboxes.xyxy = pred_bboxes.xyxy[mask]
-    pred_bboxes.id = pred_bboxes.id[mask]
-    pred_bboxes.xywh = pred_bboxes.xywh[mask]
-    pred_bboxes.xyxyn = pred_bboxes.xyxyn[mask]
-    pred_bboxes.xywhn = pred_bboxes.xywhn[mask]
-    pred_bboxes.data = pred_bboxes.data[mask]
-    return pred_bboxes
-
+    logging.debug(f'Mask: {mask}')
+    
+    def subset_tensor(pred, mask, ptype):
+        logging.debug(f'BEFORE removal: {pred}')
+        
+        pred = list(pred)
+        if ptype == 'int':
+            res = [ int(pred[i])   for i, m in enumerate(mask) if m ]
+        elif ptype == 'float':
+            res = [ float(pred[i]) for i, m in enumerate(mask) if m ]
+        elif ptype == 'list':
+            res = [ list(pred[i])  for i, m in enumerate(mask) if m ]
+        res = torch.tensor(res)
+        
+        logging.debug(f'AFTER  removal: {res}')
+        return(res)
+    
+    pb = {}
+    pb['cls']   = subset_tensor(pred_bboxes.cls,   mask, 'float')
+    pb['conf']  = subset_tensor(pred_bboxes.conf,  mask, 'float')
+    pb['xyxy']  = subset_tensor(pred_bboxes.xyxy,  mask, 'list')
+    pb['xywh']  = subset_tensor(pred_bboxes.xywh,  mask, 'list')
+    pb['xyxyn'] = subset_tensor(pred_bboxes.xyxyn, mask, 'list')
+    pb['xywhn'] = subset_tensor(pred_bboxes.xywhn, mask, 'list')
+    pb['data']  = subset_tensor(pred_bboxes.data,  mask, 'list')
+    return(pb)
 
 

@@ -7,21 +7,9 @@ import logging
 import subprocess
 import torch
 
-from src.common import get_test_analysis_times
-from src.graph import gen_save_group_chart_from_csv
-from src.video import process_videos
 
 
 def execute_commands():
-    # TODO: too long function, divide into meaningful functions
-    import os
-    import logging
-    import sys
-    from src.merge import joinPDFs
-    from src.common import get_test_analysis_times
-    from src.video import process_videos
-    from src.merge import combine_results
-    from src.extract import extract
     ## Get git hash and branch to use as program version
     cwd = os.path.dirname(os.path.realpath(__file__))
     git_branch = subprocess.check_output(['git', 'branch', '--show-current'], cwd=cwd).decode('ascii').strip()
@@ -335,9 +323,11 @@ def execute_commands():
     logging.info('                   TestStripDX Started                  ')  ## INFO
     logging.info('########################################################')  ## INFO
     logging.info('Version: ' + __version__)
-
+    
+    ##
     ## Set envs for commands that use a model
-    # if args.command != 'joinPDFs':
+    ##
+    # if args.command != 'joinPDFs' or 'train':
     script_dir = os.path.abspath(os.path.dirname(__file__))
     models_dir = 'models'
     model_detector_path = ''
@@ -351,16 +341,19 @@ def execute_commands():
                 logging.error('Model file (%s) does not exist!', file_path)  ## ERROR
                 sys.exit(1)
     
+    ##
     ## Model variables
-    ## Import model params
+    ##
+    # Import model params
     TEST_ANALYSIS_TIMES = []
     try:
+        from src.common import get_test_analysis_times
         TEST_ANALYSIS_TIMES = get_test_analysis_times(args.tests)
     except:
         logging.error('No test arguments passed')
         # if args.command == #TODO: throw error when tests is required but not given(maybe make tests mandatory in the add_argument command)
     logging.debug(f'Test Analysis times: {TEST_ANALYSIS_TIMES}')  # DEBUG
-    ## Extract just the times from list of test names and times.
+    # Extract just the times from list of test names and times.
     times = sorted(set([x for x in TEST_ANALYSIS_TIMES]))
 
     if args.command in ['extract']:
@@ -368,29 +361,38 @@ def execute_commands():
         if args.times != None:
             times = args.times
         logging.debug('seconds: %s', times)  ## DEBUG
-
+    
+    ##
     ## Run subcommand
-    #	NOTE: Import each set of functions as needed becuase many of the packages take >30 sec to import
-    #	      so we need to only run import when we need to
+    ##
+    # NOTE: Import each set of functions as needed becuase many of the packages take >30 sec to import
+    #       so we need to only run import when we need to
     if args.command == 'process':
+        from src.video import process_videos
         process_videos(args.in_videos,
                        model_detector_path,
                        times,  # Timings based on the tests input from the command line argument
                        args.cleanup, args.suffix,in_vid_dir=args.in_videos_dir)
+    
     elif args.command == 'combine':
+        from src.merge import combine_results
         combine_results(args.in_results, args.out_combined, TEST_ANALYSIS_TIMES)
+    
     elif args.command == 'joinPDFs':
+        from src.merge import joinPDFs
         if args.dir and args.dir != '':
             joinPDFs(output_file=args.out_pdf, dir_path=args.dir)
         else:
             joinPDFs(output_file=args.out_pdf, input_PDFs=args.in_pdfs)
-    elif args.command == 'extract':
-        extract(args.in_videos, args.outdir, sorted(set([x[1] for x in TEST_ANALYSIS_TIMES])))
-    elif args.command == 'train':
-        train(args.apikey, args.workspace, args.project, args.model, args.version, args.epochs, args.tune, args.partial_trained)
+    
     elif args.command == 'gen_graph':
+        from src.graph import gen_save_group_chart_from_csv
         gen_save_group_chart_from_csv(args.path, args.x_label, args.y_labels, args.output_dir, args.graph_height,
                                       args.graph_width)
+    
+    elif args.command == 'extract':
+        from src.extract import extract
+        extract(args.in_videos, args.outdir, sorted(set([x[1] for x in TEST_ANALYSIS_TIMES])))
     
     # Roboflow upload and training
     elif args.command == 'predict_and_upload_to_roboflow':
@@ -400,7 +402,6 @@ def execute_commands():
     elif args.command == 'train':
         from src.train import train
         train(args.apikey, args.workspace, args.project, args.model, args.version, args.epochs, args.tune, args.partial_trained)
-
 
 
     logFormat = "[%(levelname)s]: %(message)s"
